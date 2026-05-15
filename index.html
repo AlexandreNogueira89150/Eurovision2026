@@ -116,22 +116,22 @@
 </div>
 
 <div id="tab-vote" class="view active">
-  <div id="user-bar">
-    <label>👤 Qui vote ?</label>
-    <select id="user-select" onchange="onUserChange()">
-      <option value="">— choisir —</option>
-    </select>
-    <button id="add-user-btn" onclick="openModal()">+</button>
+  <div id="user-bar" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Qui vote ?</span>
+      <button onclick="openModal(true)" style="background:none;border:none;color:var(--accent);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;padding:0;">+ Nouveau</button>
+    </div>
+    <div id="profile-bubbles" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
   </div>
   <div id="vote-list"></div>
 </div>
 
 <div id="tab-rank" class="view">
-  <div id="user-bar-rank">
-    <label>👤 Qui ?</label>
-    <select id="user-select-rank" onchange="onUserChangeRank()">
-      <option value="">— choisir —</option>
-    </select>
+  <div id="user-bar-rank" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Qui classe ?</span>
+    </div>
+    <div id="profile-bubbles-rank" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
   </div>
   <p class="section-hdr">Réorganise ton classement</p>
   <p id="rank-hint" style="font-size:12px;color:var(--muted);margin-bottom:12px;">Glisse pour réordonner. Seuls les pays notés apparaissent.</p>
@@ -155,12 +155,16 @@
 
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
-    <h3>Ajouter un votant</h3>
-    <input type="text" id="new-user-input" placeholder="Prénom…" maxlength="20"
+    <h3 id="modal-title">Qui es-tu ?</h3>
+    <p id="modal-subtitle" style="font-size:12px;color:var(--muted);margin-bottom:14px;">Choisis ton prénom pour voter. Il sera verrouillé sur cet appareil.</p>
+    <!-- Existing users list -->
+    <div id="existing-users" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+    <!-- Or new name -->
+    <input type="text" id="new-user-input" placeholder="Nouveau prénom…" maxlength="20"
       onkeydown="if(event.key==='Enter')confirmAddUser()" />
     <div class="modal-btns">
-      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="confirmAddUser()">Ajouter</button>
+      <button class="btn btn-ghost" id="modal-cancel-btn" onclick="closeModal()" style="display:none">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAddUser()">Confirmer</button>
     </div>
   </div>
 </div>
@@ -218,7 +222,21 @@ async function loadState(){
     if(data) state=data;
     setSyncStatus("ok");
   }catch(e){setSyncStatus("err");}
-  renderAll();
+  // Restore identity from localStorage
+  const saved=getLocalIdentity();
+  if(saved){
+    currentUser=saved;
+    currentUserRank=saved;
+    // Make sure user exists in state
+    if(!state.users) state.users=[];
+    if(!state.votes) state.votes={};
+    if(!state.users.includes(saved)){state.users.push(saved);state.votes[saved]={};}
+    updateIdentityUI();
+    renderAll();
+  } else {
+    renderAll();
+    openModal(false);
+  }
   startFirebaseStream();
 }
 
@@ -241,8 +259,8 @@ function startFirebaseStream(){
     try{
       const msg=JSON.parse(e.data);
       if(msg.data){
-        // merge: don't overwrite local state if a save is in flight
-        if(!saveTimer){
+        const modalOpen=document.getElementById("modal-overlay").classList.contains("open");
+        if(!saveTimer&&!modalOpen){
           state=msg.data;
           renderAll();
         }
@@ -275,47 +293,122 @@ function switchTab(name){
   if(name==="order") renderOrder();
 }
 
-// ── MODAL ──
-function openModal(){document.getElementById("modal-overlay").classList.add("open");setTimeout(()=>document.getElementById("new-user-input").focus(),50);}
-function closeModal(){document.getElementById("modal-overlay").classList.remove("open");document.getElementById("new-user-input").value="";}
-function confirmAddUser(){
+// ── IDENTITY (localStorage — per device) ──
+const LOCAL_KEY="esc2026_identity";
+
+function getLocalIdentity(){return localStorage.getItem(LOCAL_KEY)||"";}
+function setLocalIdentity(name){localStorage.setItem(LOCAL_KEY,name);}
+function clearLocalIdentity(){localStorage.removeItem(LOCAL_KEY);}
+
+function openModal(allowCancel=false){
+  // populate existing users from Firebase state
+  const container=document.getElementById("existing-users");
+  container.innerHTML="";
+  if(state.users&&state.users.length){
+    state.users.forEach(u=>{
+      const btn=document.createElement("button");
+      btn.textContent=u;
+      btn.style.cssText="background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text);padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;";
+      btn.onclick=()=>selectExistingUser(u);
+      container.appendChild(btn);
+    });
+  }
+  const cancelBtn=document.getElementById("modal-cancel-btn");
+  cancelBtn.style.display=allowCancel?"":"none";
+  document.getElementById("modal-overlay").classList.add("open");
+  setTimeout(()=>document.getElementById("new-user-input").focus(),50);
+}
+
+function closeModal(){
+  // Only closeable if already has identity
+  if(!getLocalIdentity()) return;
+  document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("new-user-input").value="";
+}
+
+function changeIdentity(){openModal(true);}
+
+function selectExistingUser(name){
+  setLocalIdentity(name);
+  currentUser=name;
+  currentUserRank=name;
+  document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("new-user-input").value="";
+  updateIdentityUI();
+  renderVoteList();
+}
+
+async function confirmAddUser(){
   const val=document.getElementById("new-user-input").value.trim();
-  if(!val) return;
-  if(state.users.includes(val)){alert("Prénom déjà utilisé !");return;}
+  if(!val){
+    // If nothing typed but existing selected via button → already handled
+    return;
+  }
+  // Re-fetch latest state before adding
+  try{
+    const res=await fetch(FB_URL);
+    const data=await res.json();
+    if(data) state=data;
+  }catch(e){}
+  if(!state.users) state.users=[];
+  if(!state.votes) state.votes={};
+  if(state.users.includes(val)){
+    // Name exists → just claim it for this device
+    setLocalIdentity(val);
+    currentUser=val;currentUserRank=val;
+    document.getElementById("modal-overlay").classList.remove("open");
+    document.getElementById("new-user-input").value="";
+    updateIdentityUI();
+    renderVoteList();
+    return;
+  }
   state.users.push(val);
-  if(!state.votes[val]) state.votes[val]={};
-  closeModal();
-  renderUserSelects();
+  state.votes[val]={};
+  setLocalIdentity(val);
   currentUser=val;currentUserRank=val;
-  document.getElementById("user-select").value=val;
-  document.getElementById("user-select-rank").value=val;
+  document.getElementById("modal-overlay").classList.remove("open");
+  document.getElementById("new-user-input").value="";
+  updateIdentityUI();
   renderVoteList();
   debounceSave();
 }
 
-// ── USER SELECTS ──
-function renderUserSelects(){
-  ["user-select","user-select-rank"].forEach(id=>{
-    const sel=document.getElementById(id);
-    const cur=sel.value;
-    sel.innerHTML='<option value="">— choisir —</option>';
-    state.users.forEach(u=>{
-      const o=document.createElement("option");
-      o.value=u;o.textContent=u;
-      if(u===cur) o.selected=true;
-      sel.appendChild(o);
+function updateIdentityUI(){
+  // Profile bubbles — shared renderer
+  function renderBubbles(containerId, activeUser, onSwitch){
+    const container=document.getElementById(containerId);
+    if(!container) return;
+    container.innerHTML="";
+    const users=state.users||[];
+    users.forEach(u=>{
+      const active=u===activeUser;
+      const btn=document.createElement("button");
+      btn.textContent=u;
+      btn.style.cssText=`padding:7px 16px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:${active?"700":"500"};cursor:pointer;transition:all .15s;background:${active?"var(--accent)":"var(--surface2)"};color:${active?"#000":"var(--text)"};border:2px solid ${active?"var(--accent)":"var(--border)"};`;
+      btn.onclick=()=>onSwitch(u);
+      container.appendChild(btn);
     });
+    if(!users.length){
+      container.innerHTML='<span style="font-size:12px;color:var(--muted)">Aucun profil — clique sur + Nouveau</span>';
+    }
+  }
+  renderBubbles("profile-bubbles", currentUser, u=>{
+    currentUser=u; setLocalIdentity(u); updateIdentityUI(); renderVoteList();
+  });
+  renderBubbles("profile-bubbles-rank", currentUserRank, u=>{
+    currentUserRank=u; setLocalIdentity(u); currentUser=u; updateIdentityUI(); renderRank();
   });
 }
-function onUserChange(){
-  currentUser=document.getElementById("user-select").value;
-  if(currentUser&&!state.votes[currentUser]) state.votes[currentUser]={};
+
+function switchUser(name){
+  currentUser=name;
+  currentUserRank=name;
+  setLocalIdentity(name);
+  updateIdentityUI();
   renderVoteList();
 }
-function onUserChangeRank(){
-  currentUserRank=document.getElementById("user-select-rank").value;
-  renderRank();
-}
+
+function changeIdentity(){openModal(true);}
 
 // ── VOTE LIST ──
 function renderVoteList(){
@@ -454,7 +547,7 @@ let dragSrcIdx=null;
 function renderRank(){
   const el=document.getElementById("rank-list");
   if(!currentUserRank){
-    el.innerHTML='<div class="no-voter">Sélectionne ton prénom.</div>';return;
+    el.innerHTML='<div class="no-voter">Identité non configurée.</div>';return;
   }
   const ranked=getRanked(currentUserRank);
   if(!ranked.length){
@@ -554,12 +647,9 @@ function renderResults(){
 
 // ── RENDER ALL ──
 function renderAll(){
-  renderUserSelects();
-  // sync current user selections
-  if(currentUser) document.getElementById("user-select").value=currentUser;
-  if(currentUserRank) document.getElementById("user-select-rank").value=currentUserRank;
+  updateIdentityUI();
   const activeTab=document.querySelector(".tab.active");
-  const names=["vote","rank","results"];
+  const names=["vote","rank","results","order"];
   const idx=Array.from(document.querySelectorAll(".tab")).indexOf(activeTab);
   if(idx===0) renderVoteList();
   if(idx===1) renderRank();
