@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Eurovision 2026 🎤</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3a;
+    --accent:#e8c84a;--accent2:#c044ff;--text:#f0f0f5;--muted:#7070a0;--radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overscroll-behavior:none;}
+  header{background:linear-gradient(135deg,#1a0a2e 0%,#0f0f1f 50%,#1a0a0a 100%);padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .logo span{font-size:13px;display:block;letter-spacing:4px;margin-top:-4px;}
+  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
+  .tab{flex:1;padding:13px 6px;text-align:center;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .view{display:none;padding:14px;}
+  .view.active{display:block;}
+  #user-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+  #user-bar label,#user-bar-rank label{font-size:12px;color:var(--muted);white-space:nowrap;}
+  select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;}
+  #add-user-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);padding:8px 14px;font-size:18px;cursor:pointer;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:min(340px,92vw);}
+  .modal h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:16px;color:var(--accent);}
+  .modal input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;}
+  .modal input:focus{border-color:var(--accent);}
+  .modal-btns{display:flex;gap:10px;}
+  .btn{flex:1;padding:10px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:opacity .2s;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  .country-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
+  .country-card.rated{border-color:var(--accent);}
+  .country-header{display:flex;align-items:center;padding:12px 14px;gap:10px;}
+  .country-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted);min-width:24px;text-align:right;}
+  .flag{font-size:26px;line-height:1;}
+  .country-info{flex:1;min-width:0;}
+  .country-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .country-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rating-display{font-size:20px;}
+  .emoji-btns{display:flex;padding:0 10px 12px;gap:5px;justify-content:space-between;}
+  .emoji-btn{flex:1;background:var(--surface2);border:2px solid transparent;border-radius:10px;font-size:20px;padding:7px 2px;cursor:pointer;text-align:center;transition:all .15s;line-height:1;}
+  .emoji-btn:hover{transform:scale(1.1);background:var(--border);}
+  .emoji-btn.selected{border-color:var(--accent);background:rgba(232,200,74,.12);transform:scale(1.12);}
+  .rank-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:11px 13px;gap:9px;cursor:grab;user-select:none;transition:background .2s,border-color .2s,opacity .2s;touch-action:none;}
+  .rank-card.dragging{opacity:.35;}
+  .rank-card.drag-over{border-color:var(--accent);background:rgba(232,200,74,.06);}
+  .rank-pos{font-family:'Bebas Neue',sans-serif;font-size:19px;min-width:24px;text-align:center;color:var(--muted);}
+  .rank-pos.gold{color:#ffd700;}.rank-pos.silver{color:#c0c0c0;}.rank-pos.bronze{color:#cd7f32;}
+  .result-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:9px;}
+  .result-pos{font-family:'Bebas Neue',sans-serif;font-size:17px;min-width:20px;color:var(--muted);text-align:center;}
+  .result-bar-info{flex:1;min-width:0;}
+  .result-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .result-bar-bg{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+  .result-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .6s ease;}
+  .result-score{font-weight:600;font-size:12px;color:var(--accent);white-space:nowrap;}
+  .voter-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+  .voter-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--muted);}
+  .voter-pill span{color:var(--text);}
+  .sync-bar{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:12px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border);}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
+  .sync-dot.ok{background:#4ade80;}.sync-dot.saving{background:var(--accent);animation:pulse .8s infinite;}.sync-dot.err{background:#f87171;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .section-hdr{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;padding-left:2px;}
+  .vote-count{font-size:11px;color:var(--muted);margin-bottom:10px;}
+  .vote-count b{color:var(--accent);}
+  .no-voter{background:rgba(232,200,74,.07);border:1px solid rgba(232,200,74,.25);border-radius:var(--radius);padding:16px;text-align:center;color:var(--accent);font-size:13px;margin-bottom:14px;}
+  #user-bar-rank{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+  .order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:10px 13px;gap:10px;cursor:grab;user-select:none;touch-action:none;transition:background .2s,border-color .2s,opacity .2s;}
+  .order-card.dragging{opacity:.35;}
+  .order-card.drag-over{border-color:var(--accent2);background:rgba(192,68,255,.06);}
+  /* ── AUDIO PLAYER ── */
+  .preview-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;transition:all .2s;}
+  .preview-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .preview-btn.playing{border-color:var(--accent2);color:var(--accent2);animation:pulse .8s infinite;}
+  .preview-btn.loading{opacity:.5;pointer-events:none;}
+  .audio-bar{padding:0 12px 12px;display:none;}
+  .audio-bar.open{display:block;}
+  .audio-progress{width:100%;height:4px;background:var(--surface2);border-radius:2px;cursor:pointer;margin-bottom:6px;position:relative;overflow:hidden;}
+  .audio-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;width:0%;transition:width .1s linear;pointer-events:none;}
+  .audio-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+  .audio-not-found{font-size:11px;color:#f87171;padding:0 12px 10px;}
+  .order-num{font-family:'Bebas Neue',sans-serif;font-size:19px;min-width:24px;text-align:center;color:var(--muted);}
+  .order-info{flex:1;min-width:0;}
+  .order-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .order-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .reset-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:8px 14px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;transition:color .2s,border-color .2s;}
+  .reset-btn:hover{color:var(--accent);border-color:var(--accent);}
+  .order-hint{font-size:12px;color:var(--muted);margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Eurovision 2026<span>VIENNA · 16 MAI</span></div>
+  </div>
+  <div style="font-size:24px">🎤</div>
+</header>
+
+<div class="sync-bar">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-label">Chargement…</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('vote')">🗳️ Voter</div>
+  <div class="tab" onclick="switchTab('rank')">🏅 Classer</div>
+  <div class="tab" onclick="switchTab('results')">📊 Résultats</div>
+  <div class="tab" onclick="switchTab('order')">⚙️ Ordre</div>
+</div>
+
+<div id="tab-vote" class="view active">
+  <div id="user-bar">
+    <label>👤 Qui vote ?</label>
+    <select id="user-select" onchange="onUserChange()">
+      <option value="">— choisir —</option>
+    </select>
+    <button id="add-user-btn" onclick="openModal()">+</button>
+  </div>
+  <div id="vote-list"></div>
+</div>
+
+<div id="tab-rank" class="view">
+  <div id="user-bar-rank">
+    <label>👤 Qui ?</label>
+    <select id="user-select-rank" onchange="onUserChangeRank()">
+      <option value="">— choisir —</option>
+    </select>
+  </div>
+  <p class="section-hdr">Réorganise ton classement</p>
+  <p id="rank-hint" style="font-size:12px;color:var(--muted);margin-bottom:12px;">Glisse pour réordonner. Seuls les pays notés apparaissent.</p>
+  <div id="rank-list"></div>
+</div>
+
+<div id="tab-results" class="view">
+  <p class="section-hdr">Résultats famille</p>
+  <p id="results-meta" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></p>
+  <div id="results-list"></div>
+</div>
+
+<div id="tab-order" class="view">
+  <p class="section-hdr">Ordre de passage</p>
+  <p class="order-hint">Glisse pour corriger l'ordre si nécessaire. La modification s'applique à toute la famille.</p>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+    <button class="reset-btn" onclick="resetOrder()">↺ Remettre l'ordre officiel</button>
+  </div>
+  <div id="order-list"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Ajouter un votant</h3>
+    <input type="text" id="new-user-input" placeholder="Prénom…" maxlength="20"
+      onkeydown="if(event.key==='Enter')confirmAddUser()" />
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAddUser()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COUNTRIES=[
+  {pos:1,name:"Danemark",artist:"Søren Torpegaard Lund",song:"Før Vi Går Hjem",flag:"🇩🇰"},
+  {pos:2,name:"Allemagne",artist:"Sarah Engels",song:"Fire",flag:"🇩🇪"},
+  {pos:3,name:"Israël",artist:"Noam Bettan",song:"Michelle",flag:"🇮🇱"},
+  {pos:4,name:"Belgique",artist:"ESSYLA",song:"Dancing on the Ice",flag:"🇧🇪"},
+  {pos:5,name:"Albanie",artist:"Alis",song:"Nân",flag:"🇦🇱"},
+  {pos:6,name:"Grèce",artist:"Akylas",song:"Ferto",flag:"🇬🇷"},
+  {pos:7,name:"Ukraine",artist:"LELÉKA",song:"Ridnym",flag:"🇺🇦"},
+  {pos:8,name:"Australie",artist:"Delta Goodrem",song:"Eclipse",flag:"🇦🇺"},
+  {pos:9,name:"Serbie",artist:"LAVINA",song:"Kraj Mene",flag:"🇷🇸"},
+  {pos:10,name:"Malte",artist:"AIDAN",song:"Bella",flag:"🇲🇹"},
+  {pos:11,name:"Rép. Tchèque",artist:"Daniel Zizka",song:"CROSSROADS",flag:"🇨🇿"},
+  {pos:12,name:"Bulgarie",artist:"DARA",song:"Bangaranga",flag:"🇧🇬"},
+  {pos:13,name:"Croatie",artist:"LELEK",song:"Andromeda",flag:"🇭🇷"},
+  {pos:14,name:"Grande-Bretagne",artist:"LOOK MUM NO COMPUTER",song:"Eins, Zwei, Drei",flag:"🇬🇧"},
+  {pos:15,name:"France",artist:"Monroe",song:"Regarde !",flag:"🇫🇷"},
+  {pos:16,name:"Moldavie",artist:"Satoshi",song:"Viva, Moldova!",flag:"🇲🇩"},
+  {pos:17,name:"Finlande",artist:"Lampenius x Parkkonen",song:"Liekinheitin",flag:"🇫🇮"},
+  {pos:18,name:"Pologne",artist:"ALICJA",song:"Pray",flag:"🇵🇱"},
+  {pos:19,name:"Lituanie",artist:"Lion Ceccah",song:"Sólo Quiero Más",flag:"🇱🇹"},
+  {pos:20,name:"Suède",artist:"FELICIA",song:"My System",flag:"🇸🇪"},
+  {pos:21,name:"Chypre",artist:"Antigoni",song:"JALLA",flag:"🇨🇾"},
+  {pos:22,name:"Italie",artist:"Sal Da Vinci",song:"Per Sempre Sì",flag:"🇮🇹"},
+  {pos:23,name:"Norvège",artist:"JONAS LOVV",song:"YA YA YA",flag:"🇳🇴"},
+  {pos:24,name:"Roumanie",artist:"Alexandra Căpitănescu",song:"Choke Me",flag:"🇷🇴"},
+  {pos:25,name:"Autriche",artist:"COSMÓ",song:"Tanzschein",flag:"🇦🇹"},
+];
+const EMOJIS=[
+  {e:"🤮",v:1,label:"Non merci"},
+  {e:"😐",v:2,label:"Bof"},
+  {e:"🙂",v:3,label:"Sympa"},
+  {e:"❤️",v:4,label:"J'aime"},
+  {e:"🔥",v:5,label:"Coup de cœur"},
+];
+
+let state={users:[],votes:{}};
+let currentUser="";
+let currentUserRank="";
+let saveTimer=null;
+
+// ── FIREBASE CONFIG ──
+const FB_URL="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
+const FB_STREAM="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
+
+async function loadState(){
+  setSyncStatus("loading");
+  try{
+    const res=await fetch(FB_URL);
+    const data=await res.json();
+    if(data) state=data;
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
+  renderAll();
+  startFirebaseStream();
+}
+
+async function saveState(){
+  setSyncStatus("saving");
+  try{
+    await fetch(FB_URL,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(state)});
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
+}
+
+function debounceSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveState,600);}
+
+// ── FIREBASE SERVER-SENT EVENTS (temps réel) ──
+let sseSource=null;
+function startFirebaseStream(){
+  if(sseSource) sseSource.close();
+  sseSource=new EventSource(FB_STREAM.replace(".json",".json?accept=text/event-stream"));
+  sseSource.addEventListener("put",e=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.data){
+        // merge: don't overwrite local state if a save is in flight
+        if(!saveTimer){
+          state=msg.data;
+          renderAll();
+        }
+      }
+    }catch(_){}
+  });
+  sseSource.onerror=()=>{
+    // SSE closed by Firebase after ~30s inactivity, reconnect silently
+    setTimeout(startFirebaseStream, 2000);
+  };
+}
+
+// ── SYNC UI ──
+function setSyncStatus(s){
+  const dot=document.getElementById("sync-dot");
+  const lbl=document.getElementById("sync-label");
+  dot.className="sync-dot "+s;
+  const map={ok:"Synchronisé · Partagé famille",saving:"Sauvegarde…",err:"Erreur de sync",loading:"Chargement…"};
+  lbl.textContent=map[s]||s;
+}
+
+// ── TABS ──
+function switchTab(name){
+  const names=["vote","rank","results","order"];
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("tab-"+name).classList.add("active");
+  if(name==="rank") renderRank();
+  if(name==="results") renderResults();
+  if(name==="order") renderOrder();
+}
+
+// ── MODAL ──
+function openModal(){document.getElementById("modal-overlay").classList.add("open");setTimeout(()=>document.getElementById("new-user-input").focus(),50);}
+function closeModal(){document.getElementById("modal-overlay").classList.remove("open");document.getElementById("new-user-input").value="";}
+function confirmAddUser(){
+  const val=document.getElementById("new-user-input").value.trim();
+  if(!val) return;
+  if(state.users.includes(val)){alert("Prénom déjà utilisé !");return;}
+  state.users.push(val);
+  if(!state.votes[val]) state.votes[val]={};
+  closeModal();
+  renderUserSelects();
+  currentUser=val;currentUserRank=val;
+  document.getElementById("user-select").value=val;
+  document.getElementById("user-select-rank").value=val;
+  renderVoteList();
+  debounceSave();
+}
+
+// ── USER SELECTS ──
+function renderUserSelects(){
+  ["user-select","user-select-rank"].forEach(id=>{
+    const sel=document.getElementById(id);
+    const cur=sel.value;
+    sel.innerHTML='<option value="">— choisir —</option>';
+    state.users.forEach(u=>{
+      const o=document.createElement("option");
+      o.value=u;o.textContent=u;
+      if(u===cur) o.selected=true;
+      sel.appendChild(o);
+    });
+  });
+}
+function onUserChange(){
+  currentUser=document.getElementById("user-select").value;
+  if(currentUser&&!state.votes[currentUser]) state.votes[currentUser]={};
+  renderVoteList();
+}
+function onUserChangeRank(){
+  currentUserRank=document.getElementById("user-select-rank").value;
+  renderRank();
+}
+
+// ── VOTE LIST ──
+function renderVoteList(){
+  const el=document.getElementById("vote-list");
+  if(!currentUser){
+    el.innerHTML='<div class="no-voter">Sélectionne ton prénom pour voter, ou ajoute-toi avec <b>+</b></div>';
+    return;
+  }
+  const uv=state.votes[currentUser]||{};
+  const rated=Object.values(uv).filter(v=>v.rating).length;
+  const ordered=getOrderedCountries();
+  let html=`<p class="vote-count"><b>${rated}</b>/${ordered.length} pays notés</p>`;
+  ordered.forEach((c,i)=>{
+    const vote=uv[c.name]||{};
+    const isRated=!!vote.rating;
+    const emojiRow=EMOJIS.map(em=>`<button class="emoji-btn${vote.rating===em.v?" selected":""}" onclick="setRating('${c.name}',${em.v})" title="${em.label}">${em.e}</button>`).join("");
+    const cKey=c.name.replace(/'/g,"\\'");
+    html+=`<div class="country-card${isRated?" rated":""}" id="card-${i}">
+      <div class="country-header">
+        <span class="country-num">${i+1}</span>
+        <span class="flag">${c.flag}</span>
+        <div class="country-info">
+          <div class="country-name">${c.name}</div>
+          <div class="country-artist">${c.artist} · <em>${c.song}</em></div>
+        </div>
+        <button class="preview-btn" id="pbtn-${i}" onclick="togglePreview(${i},'${cKey}')" title="Écouter 30s">▶</button>
+        <span class="rating-display">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>
+      </div>
+      <div class="audio-bar" id="abar-${i}">
+        <div class="audio-progress" onclick="seekAudio(event,${i})">
+          <div class="audio-progress-fill" id="aprog-${i}"></div>
+        </div>
+        <div class="audio-meta"><span id="atime-${i}">0:00</span><span id="adur-${i}">0:30</span></div>
+      </div>
+      <div class="emoji-btns">${emojiRow}</div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+function setRating(name,val){
+  if(!currentUser) return;
+  if(!state.votes[currentUser]) state.votes[currentUser]={};
+  const prev=state.votes[currentUser][name]||{};
+  state.votes[currentUser][name]={...prev,rating:prev.rating===val?null:val};
+  renderVoteList();
+  debounceSave();
+}
+
+// ── ORDERED COUNTRIES (respects custom order stored in state) ──
+function getOrderedCountries(){
+  const base=[...COUNTRIES];
+  if(!state.countryOrder||state.countryOrder.length!==COUNTRIES.length) return base;
+  return state.countryOrder.map(name=>COUNTRIES.find(c=>c.name===name)).filter(Boolean);
+}
+
+// ── ORDER TAB ──
+let orderDragSrc=null;
+function renderOrder(){
+  const el=document.getElementById("order-list");
+  el.innerHTML="";
+  const ordered=getOrderedCountries();
+  ordered.forEach((c,idx)=>{
+    const div=document.createElement("div");
+    div.className="order-card";
+    div.draggable=true;
+    div.dataset.idx=idx;
+    div.innerHTML=`
+      <span class="order-num">${idx+1}</span>
+      <span style="font-size:22px">${c.flag}</span>
+      <div class="order-info">
+        <div class="order-name">${c.name}</div>
+        <div class="order-artist">${c.artist} · <em style="color:var(--muted)">${c.song}</em></div>
+      </div>
+      <span style="color:var(--muted);font-size:16px">⠿</span>
+    `;
+    // Desktop drag
+    div.addEventListener("dragstart",()=>{orderDragSrc=idx;div.classList.add("dragging");});
+    div.addEventListener("dragend",()=>div.classList.remove("dragging"));
+    div.addEventListener("dragover",e=>{e.preventDefault();div.classList.add("drag-over");});
+    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
+    div.addEventListener("drop",e=>{
+      e.preventDefault();div.classList.remove("drag-over");
+      if(orderDragSrc!==null&&orderDragSrc!==idx) reorderCountry(orderDragSrc,idx);
+    });
+    // Touch drag
+    let tY=0,tSrc=idx;
+    div.addEventListener("touchstart",e=>{tY=e.touches[0].clientY;tSrc=idx;},{passive:true});
+    div.addEventListener("touchmove",e=>{
+      e.preventDefault();
+      div.style.transform=`translateY(${e.touches[0].clientY-tY}px)`;
+      div.style.opacity="0.6";div.style.zIndex="50";
+      document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
+      const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+      const tc=t&&t.closest(".order-card");
+      if(tc&&tc!==div) tc.classList.add("drag-over");
+    },{passive:false});
+    div.addEventListener("touchend",e=>{
+      div.style.transform="";div.style.opacity="";div.style.zIndex="";
+      const t=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+      const tc=t&&t.closest(".order-card");
+      document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
+      if(tc&&tc!==div){const ti=parseInt(tc.dataset.idx);if(!isNaN(ti)) reorderCountry(tSrc,ti);}
+    });
+    el.appendChild(div);
+  });
+}
+function reorderCountry(from,to){
+  const ordered=getOrderedCountries().map(c=>c.name);
+  const moved=ordered.splice(from,1)[0];
+  ordered.splice(to,0,moved);
+  state.countryOrder=ordered;
+  renderOrder();
+  debounceSave();
+}
+function resetOrder(){
+  if(!confirm("Remettre l'ordre officiel Eurovision ?")) return;
+  state.countryOrder=COUNTRIES.map(c=>c.name);
+  renderOrder();
+  debounceSave();
+}
+function getRanked(user){
+  const uv=state.votes[user]||{};
+  const rated=COUNTRIES.filter(c=>uv[c.name]&&uv[c.name].rating);
+  rated.sort((a,b)=>{
+    const ra=uv[a.name].rank||9999,rb=uv[b.name].rank||9999;
+    if(ra!==rb) return ra-rb;
+    const va=uv[a.name].rating||0,vb=uv[b.name].rating||0;
+    if(vb!==va) return vb-va;
+    return a.pos-b.pos;
+  });
+  return rated;
+}
+
+let dragSrcIdx=null;
+
+function renderRank(){
+  const el=document.getElementById("rank-list");
+  if(!currentUserRank){
+    el.innerHTML='<div class="no-voter">Sélectionne ton prénom.</div>';return;
+  }
+  const ranked=getRanked(currentUserRank);
+  if(!ranked.length){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Note des pays dans l\'onglet Voter.</div>';return;
+  }
+  el.innerHTML="";
+  ranked.forEach((c,idx)=>{
+    const div=document.createElement("div");
+    div.className="rank-card";
+    div.draggable=true;
+    div.dataset.idx=idx;
+    const posClass="rank-pos"+(idx===0?" gold":idx===1?" silver":idx===2?" bronze":"");
+    const vote=state.votes[currentUserRank][c.name]||{};
+    div.innerHTML=`
+      <span class="${posClass}">${idx+1}</span>
+      <span style="font-size:22px">${c.flag}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.artist}</div>
+      </div>
+      <span style="font-size:18px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>
+      <span style="color:var(--muted);font-size:16px;padding-left:4px">⠿</span>
+    `;
+    // Desktop drag
+    div.addEventListener("dragstart",()=>{dragSrcIdx=idx;div.classList.add("dragging");});
+    div.addEventListener("dragend",()=>div.classList.remove("dragging"));
+    div.addEventListener("dragover",e=>{e.preventDefault();div.classList.add("drag-over");});
+    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
+    div.addEventListener("drop",e=>{
+      e.preventDefault();div.classList.remove("drag-over");
+      if(dragSrcIdx!==null&&dragSrcIdx!==idx) swapRank(dragSrcIdx,idx);
+    });
+    // Touch drag
+    let tStartY=0,tSrcIdx=idx;
+    div.addEventListener("touchstart",e=>{tStartY=e.touches[0].clientY;tSrcIdx=idx;},{passive:true});
+    div.addEventListener("touchmove",e=>{
+      e.preventDefault();
+      div.style.transform=`translateY(${e.touches[0].clientY-tStartY}px)`;
+      div.style.opacity="0.6";div.style.zIndex="50";
+      document.querySelectorAll(".rank-card").forEach(d=>d.classList.remove("drag-over"));
+      const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+      const tc=t&&t.closest(".rank-card");
+      if(tc&&tc!==div) tc.classList.add("drag-over");
+    },{passive:false});
+    div.addEventListener("touchend",e=>{
+      div.style.transform="";div.style.opacity="";div.style.zIndex="";
+      const t=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+      const tc=t&&t.closest(".rank-card");
+      document.querySelectorAll(".rank-card").forEach(d=>d.classList.remove("drag-over"));
+      if(tc&&tc!==div){const ti=parseInt(tc.dataset.idx);if(!isNaN(ti)) swapRank(tSrcIdx,ti);}
+    });
+    el.appendChild(div);
+  });
+}
+function swapRank(from,to){
+  if(!currentUserRank) return;
+  const ranked=getRanked(currentUserRank);
+  ranked.forEach((c,i)=>{if(!state.votes[currentUserRank][c.name]) state.votes[currentUserRank][c.name]={};state.votes[currentUserRank][c.name].rank=i+1;});
+  const names=ranked.map(c=>c.name);
+  const moved=names.splice(from,1)[0];
+  names.splice(to,0,moved);
+  names.forEach((n,i)=>{state.votes[currentUserRank][n].rank=i+1;});
+  renderRank();debounceSave();
+}
+
+// ── RESULTS ──
+function renderResults(){
+  const el=document.getElementById("results-list");
+  const meta=document.getElementById("results-meta");
+  const voters=state.users.filter(u=>Object.values(state.votes[u]||{}).some(v=>v.rating));
+  if(!voters.length){meta.textContent="";el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Aucun vote pour l\'instant.</div>';return;}
+  meta.textContent=`${voters.length} votant${voters.length>1?"s":""} : ${voters.join(", ")}`;
+  const scores=COUNTRIES.map(c=>{
+    const ratings=voters.map(u=>(state.votes[u][c.name]||{}).rating).filter(r=>r>0);
+    const avg=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:0;
+    return{c,avg,voters:voters.filter(u=>(state.votes[u][c.name]||{}).rating>0)};
+  }).filter(x=>x.avg>0).sort((a,b)=>b.avg-a.avg);
+  el.innerHTML="";
+  scores.forEach((item,idx)=>{
+    const pct=Math.round((item.avg/5)*100);
+    const pills=item.voters.map(u=>{const r=(state.votes[u][item.c.name]||{}).rating;return`<span class="voter-pill">${u}: <span>${r?EMOJIS[r-1].e:""}</span></span>`;}).join("");
+    const div=document.createElement("div");div.className="result-bar-wrap";
+    div.innerHTML=`
+      <span class="result-pos">${idx+1}</span>
+      <span style="font-size:22px">${item.c.flag}</span>
+      <div class="result-bar-info">
+        <div class="result-bar-label">
+          <span style="font-weight:600;font-size:13px">${item.c.name}</span>
+          <span class="result-score">${item.avg.toFixed(1)}/5</span>
+        </div>
+        <div class="result-bar-bg"><div class="result-bar-fill" style="width:${pct}%"></div></div>
+        <div class="voter-pills">${pills}</div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+// ── RENDER ALL ──
+function renderAll(){
+  renderUserSelects();
+  // sync current user selections
+  if(currentUser) document.getElementById("user-select").value=currentUser;
+  if(currentUserRank) document.getElementById("user-select-rank").value=currentUserRank;
+  const activeTab=document.querySelector(".tab.active");
+  const names=["vote","rank","results"];
+  const idx=Array.from(document.querySelectorAll(".tab")).indexOf(activeTab);
+  if(idx===0) renderVoteList();
+  if(idx===1) renderRank();
+  if(idx===2) renderResults();
+  if(idx===3) renderOrder();
+}
+
+// ── AUDIO PREVIEW (iTunes Search API) ──
+let currentAudio=null;
+let currentAudioIdx=null;
+const previewCache={};
+
+function fmt(s){const m=Math.floor(s/60);return m+":"+(Math.floor(s%60)+'').padStart(2,'0');}
+
+async function togglePreview(idx, countryName){
+  const btn=document.getElementById("pbtn-"+idx);
+  const bar=document.getElementById("abar-"+idx);
+
+  // If same card is playing → stop
+  if(currentAudioIdx===idx && currentAudio && !currentAudio.paused){
+    currentAudio.pause();
+    btn.textContent="▶";btn.classList.remove("playing");
+    return;
+  }
+  // Stop any other playing audio
+  if(currentAudio){
+    currentAudio.pause();
+    if(currentAudioIdx!==null){
+      const ob=document.getElementById("pbtn-"+currentAudioIdx);
+      const obb=document.getElementById("abar-"+currentAudioIdx);
+      if(ob){ob.textContent="▶";ob.classList.remove("playing");}
+      if(obb) obb.classList.remove("open");
+    }
+  }
+
+  // Already cached?
+  if(previewCache[countryName]==="none"){
+    bar.innerHTML='<div class="audio-not-found">Aperçu non disponible pour cette chanson.</div>';
+    bar.classList.add("open");return;
+  }
+  if(previewCache[countryName]){
+    playPreview(idx, previewCache[countryName], countryName);return;
+  }
+
+  // Fetch from iTunes
+  btn.classList.add("loading");btn.textContent="…";
+  const ordered=getOrderedCountries();
+  const c=ordered.find(x=>x.name===countryName);
+  const q=encodeURIComponent((c?c.artist+" "+c.song:countryName));
+  try{
+    const res=await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=3&country=FR`);
+    const data=await res.json();
+    const track=data.results&&data.results.find(r=>r.previewUrl);
+    btn.classList.remove("loading");
+    if(!track){
+      previewCache[countryName]="none";
+      bar.innerHTML='<div class="audio-not-found">Aperçu non disponible pour cette chanson.</div>';
+      bar.classList.add("open");
+      btn.textContent="▶";return;
+    }
+    previewCache[countryName]=track.previewUrl;
+    playPreview(idx, track.previewUrl, countryName);
+  }catch(e){
+    btn.classList.remove("loading");btn.textContent="▶";
+    bar.innerHTML='<div class="audio-not-found">Erreur réseau.</div>';
+    bar.classList.add("open");
+  }
+}
+
+function playPreview(idx, url, countryName){
+  const btn=document.getElementById("pbtn-"+idx);
+  const bar=document.getElementById("abar-"+idx);
+  const prog=document.getElementById("aprog-"+idx);
+  const timeEl=document.getElementById("atime-"+idx);
+  const durEl=document.getElementById("adur-"+idx);
+  if(!btn||!bar) return;
+
+  const audio=new Audio(url);
+  currentAudio=audio;currentAudioIdx=idx;
+
+  audio.addEventListener("loadedmetadata",()=>{
+    if(durEl) durEl.textContent=fmt(audio.duration);
+  });
+  audio.addEventListener("timeupdate",()=>{
+    if(!prog||!timeEl) return;
+    const pct=audio.duration?(audio.currentTime/audio.duration)*100:0;
+    prog.style.width=pct+"%";
+    timeEl.textContent=fmt(audio.currentTime);
+  });
+  audio.addEventListener("ended",()=>{
+    btn.textContent="▶";btn.classList.remove("playing");
+    if(prog) prog.style.width="0%";
+  });
+  audio.play();
+  bar.classList.add("open");
+  btn.textContent="⏸";btn.classList.add("playing");
+}
+
+function seekAudio(e, idx){
+  if(!currentAudio||currentAudioIdx!==idx) return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const pct=(e.clientX-rect.left)/rect.width;
+  currentAudio.currentTime=pct*currentAudio.duration;
+}
+
+loadState();
+</script>
+</body>
+</html>
