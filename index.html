@@ -857,8 +857,8 @@ let loginForRank=false;
 
 function selectUserVote(name){
   if(name===currentUser) return;
-  if(isLocalAuthed(name)){
-    currentUser=name;setLocalId(name);renderVote();return;
+  if(isAdmin||isLocalAuthed(name)){
+    currentUser=name;if(!isAdmin) setLocalId(name);renderVote();return;
   }
   loginForRank=false;loginForTop5=false;
   openLoginModal(name);
@@ -866,8 +866,8 @@ function selectUserVote(name){
 
 function selectUserRank(name){
   if(name===currentUserRank) return;
-  if(isLocalAuthed(name)){
-    currentUserRank=name;setLocalId(name);renderAll();return;
+  if(isAdmin||isLocalAuthed(name)){
+    currentUserRank=name;if(!isAdmin) setLocalId(name);renderAll();return;
   }
   loginForRank=true;loginForTop5=false;
   openLoginModal(name);
@@ -1081,8 +1081,8 @@ let currentUserTop5="";
 
 function selectUserTop5(name){
   if(name===currentUserTop5) return;
-  if(isLocalAuthed(name)){
-    currentUserTop5=name;setLocalId(name);renderTop5();return;
+  if(isAdmin||isLocalAuthed(name)){
+    currentUserTop5=name;if(!isAdmin) setLocalId(name);renderTop5();return;
   }
   loginForTop5=true;loginForRank=false;
   openLoginModal(name);
