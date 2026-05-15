@@ -5,93 +5,145 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Eurovision 2026 🎤</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
-  :root {
-    --bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3a;
-    --accent:#e8c84a;--accent2:#c044ff;--text:#f0f0f5;--muted:#7070a0;--radius:14px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overscroll-behavior:none;}
-  header{background:linear-gradient(135deg,#1a0a2e 0%,#0f0f1f 50%,#1a0a0a 100%);padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
-  .logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-  .logo span{font-size:13px;display:block;letter-spacing:4px;margin-top:-4px;}
-  .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
-  .tab{flex:1;padding:13px 6px;text-align:center;font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-  .view{display:none;padding:14px;}
-  .view.active{display:block;}
-  #user-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-  #user-bar label,#user-bar-rank label{font-size:12px;color:var(--muted);white-space:nowrap;}
-  select{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;}
-  #add-user-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);padding:8px 14px;font-size:18px;cursor:pointer;}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;}
-  .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:min(340px,92vw);}
-  .modal h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin-bottom:16px;color:var(--accent);}
-  .modal input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px;}
-  .modal input:focus{border-color:var(--accent);}
-  .modal-btns{display:flex;gap:10px;}
-  .btn{flex:1;padding:10px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:opacity .2s;}
-  .btn-primary{background:var(--accent);color:#000;}
-  .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-  .country-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
-  .country-card.rated{border-color:var(--accent);}
-  .country-header{display:flex;align-items:center;padding:12px 14px;gap:10px;}
-  .country-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted);min-width:24px;text-align:right;}
-  .flag{font-size:26px;line-height:1;}
-  .country-info{flex:1;min-width:0;}
-  .country-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .country-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .rating-display{font-size:20px;}
-  .emoji-btns{display:flex;padding:0 10px 12px;gap:5px;justify-content:space-between;}
-  .emoji-btn{flex:1;background:var(--surface2);border:2px solid transparent;border-radius:10px;font-size:20px;padding:7px 2px;cursor:pointer;text-align:center;transition:all .15s;line-height:1;}
-  .emoji-btn:hover{transform:scale(1.1);background:var(--border);}
-  .emoji-btn.selected{border-color:var(--accent);background:rgba(232,200,74,.12);transform:scale(1.12);}
-  .rank-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:11px 13px;gap:9px;cursor:grab;user-select:none;transition:background .2s,border-color .2s,opacity .2s;touch-action:none;}
-  .rank-card.dragging{opacity:.35;}
-  .rank-card.drag-over{border-color:var(--accent);background:rgba(232,200,74,.06);}
-  .rank-pos{font-family:'Bebas Neue',sans-serif;font-size:19px;min-width:24px;text-align:center;color:var(--muted);}
-  .rank-pos.gold{color:#ffd700;}.rank-pos.silver{color:#c0c0c0;}.rank-pos.bronze{color:#cd7f32;}
-  .result-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:9px;}
-  .result-pos{font-family:'Bebas Neue',sans-serif;font-size:17px;min-width:20px;color:var(--muted);text-align:center;}
-  .result-bar-info{flex:1;min-width:0;}
-  .result-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
-  .result-bar-bg{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
-  .result-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .6s ease;}
-  .result-score{font-weight:600;font-size:12px;color:var(--accent);white-space:nowrap;}
-  .voter-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
-  .voter-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:11px;color:var(--muted);}
-  .voter-pill span{color:var(--text);}
-  .sync-bar{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:12px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border);}
-  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
-  .sync-dot.ok{background:#4ade80;}.sync-dot.saving{background:var(--accent);animation:pulse .8s infinite;}.sync-dot.err{background:#f87171;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-  .section-hdr{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;padding-left:2px;}
-  .vote-count{font-size:11px;color:var(--muted);margin-bottom:10px;}
-  .vote-count b{color:var(--accent);}
-  .no-voter{background:rgba(232,200,74,.07);border:1px solid rgba(232,200,74,.25);border-radius:var(--radius);padding:16px;text-align:center;color:var(--accent);font-size:13px;margin-bottom:14px;}
-  #user-bar-rank{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
-  .order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:10px 13px;gap:10px;cursor:grab;user-select:none;touch-action:none;transition:background .2s,border-color .2s,opacity .2s;}
-  .order-card.dragging{opacity:.35;}
-  .order-card.drag-over{border-color:var(--accent2);background:rgba(192,68,255,.06);}
-  /* ── AUDIO PLAYER ── */
-  .preview-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;flex-shrink:0;transition:all .2s;}
-  .preview-btn:hover{border-color:var(--accent);color:var(--accent);}
-  .preview-btn.playing{border-color:var(--accent2);color:var(--accent2);animation:pulse .8s infinite;}
-  .preview-btn.loading{opacity:.5;pointer-events:none;}
-  .audio-bar{padding:0 12px 12px;display:none;}
-  .audio-bar.open{display:block;}
-  .audio-progress{width:100%;height:4px;background:var(--surface2);border-radius:2px;cursor:pointer;margin-bottom:6px;position:relative;overflow:hidden;}
-  .audio-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;width:0%;transition:width .1s linear;pointer-events:none;}
-  .audio-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
-  .audio-not-found{font-size:11px;color:#f87171;padding:0 12px 10px;}
-  .order-num{font-family:'Bebas Neue',sans-serif;font-size:19px;min-width:24px;text-align:center;color:var(--muted);}
-  .order-info{flex:1;min-width:0;}
-  .order-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .order-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .reset-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:8px 14px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;transition:color .2s,border-color .2s;}
-  .reset-btn:hover{color:var(--accent);border-color:var(--accent);}
-  .order-hint{font-size:12px;color:var(--muted);margin-bottom:12px;}
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:#2a2a3a;--accent:#e8c84a;--accent2:#c044ff;--text:#f0f0f5;--muted:#7070a0;--radius:14px;--red:#f87171;--green:#4ade80;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overscroll-behavior:none;}
+/* HEADER */
+header{background:linear-gradient(135deg,#1a0a2e,#0f0f1f 50%,#1a0a0a);padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo span{font-size:12px;display:block;letter-spacing:4px;margin-top:-3px;}
+/* SYNC */
+.sync-bar{display:flex;align-items:center;gap:8px;padding:6px 16px;font-size:11px;color:var(--muted);background:var(--surface);border-bottom:1px solid var(--border);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.sync-dot.ok{background:var(--green);}.sync-dot.saving{background:var(--accent);animation:pulse .8s infinite;}.sync-dot.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+/* TABS */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:60px;padding:12px 4px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+/* VIEWS */
+.view{display:none;padding:14px;}
+.view.active{display:block;}
+/* PROFILE BAR */
+.profile-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;}
+.profile-bar-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.profile-bubbles{display:flex;flex-wrap:wrap;gap:7px;}
+.profile-bubble{padding:7px 15px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;background:var(--surface2);color:var(--text);border:2px solid var(--border);}
+.profile-bubble.active{background:var(--accent);color:#000;font-weight:700;border-color:var(--accent);}
+.profile-bubble.locked{opacity:.4;cursor:not-allowed;}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:300;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;width:min(360px,94vw);max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1px;margin-bottom:6px;color:var(--accent);}
+.modal p.sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+.modal input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 13px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;}
+.modal input:focus{border-color:var(--accent);}
+.modal-btns{display:flex;gap:9px;margin-top:4px;}
+.btn{flex:1;padding:10px;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3);}
+.modal-err{color:var(--red);font-size:12px;margin-bottom:8px;display:none;}
+/* CARDS */
+.country-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:border-color .2s;}
+.country-card.rated{border-color:var(--accent);}
+.country-header{display:flex;align-items:center;padding:11px 13px;gap:9px;}
+.country-num{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--muted);min-width:22px;text-align:right;}
+.flag{font-size:25px;line-height:1;}
+.country-info{flex:1;min-width:0;}
+.country-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.country-artist{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rating-display{font-size:19px;}
+.emoji-btns{display:flex;padding:0 10px 11px;gap:5px;}
+.emoji-btn{flex:1;background:var(--surface2);border:2px solid transparent;border-radius:10px;font-size:19px;padding:6px 2px;cursor:pointer;text-align:center;transition:all .15s;line-height:1;}
+.emoji-btn:hover{transform:scale(1.1);background:var(--border);}
+.emoji-btn.selected{border-color:var(--accent);background:rgba(232,200,74,.12);transform:scale(1.1);}
+/* SPECIAL CATEGORIES */
+.special-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;}
+.special-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;}
+.special-cat{margin-bottom:14px;}
+.special-cat:last-child{margin-bottom:0;}
+.special-cat-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:8px;}
+.special-cat-emoji{font-size:20px;}
+.special-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;}
+.special-select.chosen{border-color:var(--accent2);color:var(--text);}
+/* AUDIO */
+.preview-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .2s;}
+.preview-btn:hover{border-color:var(--accent);color:var(--accent);}
+.preview-btn.playing{border-color:var(--accent2);color:var(--accent2);animation:pulse .8s infinite;}
+.preview-btn.loading{opacity:.5;pointer-events:none;}
+.audio-bar{padding:0 11px 11px;display:none;}
+.audio-bar.open{display:block;}
+.audio-progress{width:100%;height:4px;background:var(--surface2);border-radius:2px;cursor:pointer;margin-bottom:5px;overflow:hidden;}
+.audio-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;width:0%;transition:width .1s linear;pointer-events:none;}
+.audio-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+.audio-not-found{font-size:11px;color:var(--red);padding:0 11px 9px;}
+/* RANK */
+.rank-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:10px 12px;gap:9px;cursor:grab;user-select:none;transition:all .2s;touch-action:none;}
+.rank-card.dragging{opacity:.35;}
+.rank-card.drag-over{border-color:var(--accent);background:rgba(232,200,74,.06);}
+.rank-pos{font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:22px;text-align:center;color:var(--muted);}
+.rank-pos.gold{color:#ffd700;}.rank-pos.silver{color:#c0c0c0;}.rank-pos.bronze{color:#cd7f32;}
+/* RESULTS */
+.result-section{margin-bottom:20px;}
+.result-section-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;padding-left:2px;}
+.result-bar-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:9px;}
+.result-pos{font-family:'Bebas Neue',sans-serif;font-size:16px;min-width:20px;color:var(--muted);text-align:center;}
+.result-bar-info{flex:1;min-width:0;}
+.result-bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.result-bar-bg{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.result-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .6s;}
+.result-score{font-weight:600;font-size:12px;color:var(--accent);white-space:nowrap;}
+.voter-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.voter-pill{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--muted);}
+.voter-pill span{color:var(--text);}
+/* SPECIAL RESULTS */
+.special-result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:7px;}
+.special-result-row{display:flex;align-items:center;gap:9px;margin-bottom:5px;}
+.special-result-row:last-child{margin-bottom:0;}
+.special-vote-detail{font-size:11px;color:var(--muted);padding-left:4px;}
+/* TOP 5 */
+.top5-card{background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:11px 13px;gap:10px;}
+.top5-pts{font-family:'Bebas Neue',sans-serif;font-size:22px;min-width:32px;text-align:center;}
+.top5-pts.p12{color:#ffd700;}.top5-pts.p10{color:#e8c84a;}.top5-pts.p8{color:#c0c0c0;}.top5-pts.p7{color:#cd7f32;}.top5-pts.p6{color:var(--muted);}
+.top5-rank-input{width:36px;height:36px;background:var(--surface2);border:2px solid var(--border);border-radius:8px;color:var(--text);font-family:'Bebas Neue',sans-serif;font-size:20px;text-align:center;outline:none;-moz-appearance:textfield;flex-shrink:0;}
+.top5-rank-input::-webkit-outer-spin-button,.top5-rank-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.top5-rank-input:focus{border-color:var(--accent);}
+.top5-rank-input.valid{border-color:var(--green);color:var(--green);}
+.top5-rank-input.duplicate{border-color:var(--red);color:var(--red);}
+.top5-remaining-hdr{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
+.top5-other{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;display:flex;align-items:center;padding:9px 13px;gap:9px;opacity:.5;}
+/* WELCOME MODAL */
+.welcome-modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 24px;width:min(340px,92vw);text-align:center;}
+.welcome-emoji{font-size:52px;margin-bottom:12px;line-height:1;}
+.welcome-msg{font-size:17px;font-weight:600;line-height:1.5;margin-bottom:20px;color:var(--text);}
+.welcome-name{color:var(--accent);}
+/* ORDER (admin only) */
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;padding:10px 12px;gap:9px;cursor:grab;user-select:none;touch-action:none;transition:all .2s;}
+.order-card.dragging{opacity:.35;}
+.order-card.drag-over{border-color:var(--accent2);background:rgba(192,68,255,.06);}
+.order-num{font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:22px;text-align:center;color:var(--muted);}
+/* ADMIN */
+.admin-section{margin-bottom:20px;}
+.admin-section-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;}
+.admin-user-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;}
+.admin-user-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.admin-user-actions{display:flex;gap:7px;flex-wrap:wrap;}
+.admin-action-btn{padding:6px 12px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:opacity .2s;}
+.admin-action-btn:hover{opacity:.8;}
+.btn-warn{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+/* FOOTER */
+footer{text-align:center;padding:20px;font-size:11px;color:var(--border);}
+footer a{color:var(--border);text-decoration:none;cursor:pointer;}
+/* MISC */
+.section-hdr{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--muted);margin-bottom:8px;}
+.vote-count{font-size:11px;color:var(--muted);margin-bottom:10px;}
+.vote-count b{color:var(--accent);}
+.no-voter{background:rgba(232,200,74,.07);border:1px solid rgba(232,200,74,.25);border-radius:var(--radius);padding:14px;text-align:center;color:var(--accent);font-size:13px;margin-bottom:12px;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
 </style>
 </head>
 <body>
@@ -100,7 +152,7 @@
   <div>
     <div class="logo">Eurovision 2026<span>VIENNA · 16 MAI</span></div>
   </div>
-  <div style="font-size:24px">🎤</div>
+  <div style="font-size:22px">🎤</div>
 </header>
 
 <div class="sync-bar">
@@ -108,68 +160,143 @@
   <span id="sync-label">Chargement…</span>
 </div>
 
-<div class="tabs">
+<div class="tabs" id="main-tabs">
   <div class="tab active" onclick="switchTab('vote')">🗳️ Voter</div>
-  <div class="tab" onclick="switchTab('rank')">🏅 Classer</div>
+  <div class="tab" onclick="switchTab('top5')">🏆 Top 5</div>
   <div class="tab" onclick="switchTab('results')">📊 Résultats</div>
-  <div class="tab" onclick="switchTab('order')">⚙️ Ordre</div>
 </div>
 
+<!-- ══ VOTE TAB ══ -->
 <div id="tab-vote" class="view active">
-  <div id="user-bar" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Qui vote ?</span>
-      <button onclick="openModal(true)" style="background:none;border:none;color:var(--accent);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;padding:0;">+ Nouveau</button>
+  <div class="profile-bar">
+    <div class="profile-bar-label">
+      <span>👤 Qui vote ?</span>
+      <button onclick="openNewUserModal()" style="background:none;border:none;color:var(--accent);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;">+ Nouveau</button>
     </div>
-    <div id="profile-bubbles" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+    <div class="profile-bubbles" id="bubbles-vote"></div>
+  </div>
+  <div class="special-section" id="special-section">
+    <div class="special-title">🏆 Catégories spéciales</div>
+    <div id="special-cats"></div>
   </div>
   <div id="vote-list"></div>
 </div>
 
-<div id="tab-rank" class="view">
-  <div id="user-bar-rank" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:11px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Qui classe ?</span>
-    </div>
-    <div id="profile-bubbles-rank" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+<!-- ══ TOP 5 TAB ══ -->
+<div id="tab-top5" class="view">
+  <div class="profile-bar">
+    <div class="profile-bar-label"><span>👤 Top 5 de…</span></div>
+    <div class="profile-bubbles" id="bubbles-top5"></div>
   </div>
-  <p class="section-hdr">Réorganise ton classement</p>
-  <p id="rank-hint" style="font-size:12px;color:var(--muted);margin-bottom:12px;">Glisse pour réordonner. Seuls les pays notés apparaissent.</p>
-  <div id="rank-list"></div>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">Ton top 5 est généré automatiquement depuis tes notes. Utilise les cases pour réordonner (1 = 12pts · 2 = 10pts · 3 = 8pts · 4 = 7pts · 5 = 6pts).</p>
+  <div id="top5-list"></div>
+  <div id="top5-remaining" style="margin-top:16px;"></div>
 </div>
 
+<!-- ══ RESULTS TAB ══ -->
 <div id="tab-results" class="view">
-  <p class="section-hdr">Résultats famille</p>
-  <p id="results-meta" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></p>
+  <p id="results-meta" style="font-size:11px;color:var(--muted);margin-bottom:14px;"></p>
   <div id="results-list"></div>
 </div>
 
+<!-- ══ ORDER TAB (admin only, injected) ══ -->
 <div id="tab-order" class="view">
   <p class="section-hdr">Ordre de passage</p>
-  <p class="order-hint">Glisse pour corriger l'ordre si nécessaire. La modification s'applique à toute la famille.</p>
+  <p style="font-size:11px;color:var(--muted);margin-bottom:10px;">Glisse pour corriger l'ordre. Modification partagée avec tous.</p>
   <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
-    <button class="reset-btn" onclick="resetOrder()">↺ Remettre l'ordre officiel</button>
+    <button onclick="resetOrder()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--muted);padding:7px 14px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;">↺ Ordre officiel</button>
   </div>
   <div id="order-list"></div>
 </div>
 
-<div class="modal-overlay" id="modal-overlay">
+<!-- ══ ADMIN TAB (injected) ══ -->
+<div id="tab-admin" class="view">
+  <div class="admin-section">
+    <div class="admin-section-title">👥 Gestion des votants</div>
+    <div id="admin-users"></div>
+  </div>
+  <div class="divider"></div>
+  <div class="admin-section">
+    <div class="admin-section-title">⚠️ Zone dangereuse</div>
+    <button class="btn btn-danger" onclick="adminResetAll()" style="width:100%;margin-bottom:10px;">🗑️ Remettre à zéro (tous les votes)</button>
+    <button class="btn btn-ghost" onclick="adminLogout()" style="width:100%;">🔒 Quitter le mode admin</button>
+  </div>
+</div>
+
+<!-- ══ MODAL: NEW USER ══ -->
+<div class="modal-overlay" id="modal-new-user">
   <div class="modal">
-    <h3 id="modal-title">Qui es-tu ?</h3>
-    <p id="modal-subtitle" style="font-size:12px;color:var(--muted);margin-bottom:14px;">Choisis ton prénom pour voter. Il sera verrouillé sur cet appareil.</p>
-    <!-- Existing users list -->
-    <div id="existing-users" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:8px;"></div>
-    <!-- Or new name -->
-    <input type="text" id="new-user-input" placeholder="Nouveau prénom…" maxlength="20"
-      onkeydown="if(event.key==='Enter')confirmAddUser()" />
+    <h3>Nouveau votant</h3>
+    <p class="sub">Choisis ton prénom et un mot de passe. Tu n'auras à le saisir qu'une seule fois sur cet appareil.</p>
+    <input type="text" id="nu-name" placeholder="Prénom…" maxlength="20" autocomplete="off" />
+    <input type="password" id="nu-pw" placeholder="Mot de passe…" maxlength="30" autocomplete="new-password" />
+    <input type="password" id="nu-pw2" placeholder="Confirmer le mot de passe…" maxlength="30" />
+    <div class="modal-err" id="nu-err"></div>
     <div class="modal-btns">
-      <button class="btn btn-ghost" id="modal-cancel-btn" onclick="closeModal()" style="display:none">Annuler</button>
-      <button class="btn btn-primary" onclick="confirmAddUser()">Confirmer</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-user')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmNewUser()">Créer</button>
     </div>
   </div>
 </div>
 
+<!-- ══ MODAL: LOGIN ══ -->
+<div class="modal-overlay" id="modal-login">
+  <div class="modal">
+    <h3 id="login-title">Connexion</h3>
+    <p class="sub" id="login-sub">Saisis ton mot de passe pour voter en tant que <b id="login-name-lbl"></b>.</p>
+    <input type="password" id="login-pw" placeholder="Mot de passe…" maxlength="30"
+      onkeydown="if(event.key==='Enter')confirmLogin()" autocomplete="current-password" />
+    <div class="modal-err" id="login-err"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modal-login')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmLogin()">Entrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADMIN LOGIN ══ -->
+<div class="modal-overlay" id="modal-admin-login">
+  <div class="modal">
+    <h3>Mode Administrateur</h3>
+    <p class="sub">Mot de passe administrateur requis.</p>
+    <input type="password" id="admin-pw-input" placeholder="Mot de passe admin…"
+      onkeydown="if(event.key==='Enter')confirmAdminLogin()" />
+    <div class="modal-err" id="admin-login-err"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modal-admin-login')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmAdminLogin()">Accéder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADMIN RESET PW ══ -->
+<div class="modal-overlay" id="modal-reset-pw">
+  <div class="modal">
+    <h3>Réinitialiser le mot de passe</h3>
+    <p class="sub">Nouveau mot de passe pour <b id="reset-pw-name"></b>.</p>
+    <input type="password" id="reset-pw-val" placeholder="Nouveau mot de passe…" maxlength="30" />
+    <div class="modal-err" id="reset-pw-err"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modal-reset-pw')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmResetPw()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-welcome">
+  <div class="welcome-modal">
+    <div class="welcome-emoji" id="welcome-emoji"></div>
+    <div class="welcome-msg" id="welcome-msg"></div>
+    <button class="btn btn-primary" onclick="closeModal('modal-welcome')" style="width:100%">🎉 C'est parti !</button>
+  </div>
+</div>
+
+<footer><a onclick="openAdminLogin()">⚙</a></footer>
+
 <script>
+// ══════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════
 const COUNTRIES=[
   {pos:1,name:"Danemark",artist:"Søren Torpegaard Lund",song:"Før Vi Går Hjem",flag:"🇩🇰"},
   {pos:2,name:"Allemagne",artist:"Sarah Engels",song:"Fire",flag:"🇩🇪"},
@@ -197,6 +324,7 @@ const COUNTRIES=[
   {pos:24,name:"Roumanie",artist:"Alexandra Căpitănescu",song:"Choke Me",flag:"🇷🇴"},
   {pos:25,name:"Autriche",artist:"COSMÓ",song:"Tanzschein",flag:"🇦🇹"},
 ];
+
 const EMOJIS=[
   {e:"🤮",v:1,label:"Non merci"},
   {e:"😐",v:2,label:"Bof"},
@@ -205,39 +333,82 @@ const EMOJIS=[
   {e:"🔥",v:5,label:"Coup de cœur"},
 ];
 
-let state={users:[],votes:{}};
+const SPECIAL_CATS=[
+  {id:"funny",   emoji:"😂", label:"Le plus drôle"},
+  {id:"outfit",  emoji:"👗", label:"La meilleure tenue"},
+  {id:"earworm", emoji:"🎵", label:"La chanson qui reste dans la tête"},
+  {id:"staging", emoji:"🎭", label:"Le meilleur décor"},
+];
+
+const ADMIN_PW="Admin123!!";
+const FB_URL="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
+
+// ══════════════════════════════════════════════
+// STATE
+// state.users = [{name, pwHash}]
+// state.votes = { "Alex": { "France": {rating:5, rank:2}, ... } }
+// state.special = { "Alex": { funny:"France", outfit:"Suède", ... } }
+// state.countryOrder = ["Danemark", "Allemagne", ...]
+// ══════════════════════════════════════════════
+let state={users:[],votes:{},special:{},countryOrder:null};
 let currentUser="";
 let currentUserRank="";
+let isAdmin=false;
 let saveTimer=null;
+let loginTarget=""; // name being logged into
 
-// ── FIREBASE CONFIG ──
-const FB_URL="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
-const FB_STREAM="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
+// ══════════════════════════════════════════════
+// SIMPLE HASH (not cryptographic, sufficient for this use case)
+// ══════════════════════════════════════════════
+async function hashPw(pw){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
 
+// ══════════════════════════════════════════════
+// LOCAL STORAGE — per device
+// ══════════════════════════════════════════════
+const LS_ID="esc2026_id";
+const LS_ADMIN="esc2026_admin";
+function getLocalId(){return localStorage.getItem(LS_ID)||"";}
+function setLocalId(n){localStorage.setItem(LS_ID,n);}
+function getLocalAdmin(){return localStorage.getItem(LS_ADMIN)==="1";}
+function setLocalAdmin(v){if(v) localStorage.setItem(LS_ADMIN,"1"); else localStorage.removeItem(LS_ADMIN);}
+
+// ══════════════════════════════════════════════
+// FIREBASE
+// ══════════════════════════════════════════════
 async function loadState(){
   setSyncStatus("loading");
   try{
     const res=await fetch(FB_URL);
     const data=await res.json();
-    if(data) state=data;
+    if(data) state=mergeState(data);
     setSyncStatus("ok");
   }catch(e){setSyncStatus("err");}
-  // Restore identity from localStorage
-  const saved=getLocalIdentity();
-  if(saved){
+
+  // Restore identity
+  const saved=getLocalId();
+  if(saved && state.users.find(u=>u.name===saved)){
     currentUser=saved;
     currentUserRank=saved;
-    // Make sure user exists in state
-    if(!state.users) state.users=[];
-    if(!state.votes) state.votes={};
-    if(!state.users.includes(saved)){state.users.push(saved);state.votes[saved]={};}
-    updateIdentityUI();
-    renderAll();
-  } else {
-    renderAll();
-    openModal(false);
+    currentUserTop5=saved;
   }
-  startFirebaseStream();
+  isAdmin=getLocalAdmin();
+
+  renderAll();
+  startStream();
+}
+
+function mergeState(data){
+  // Ensure all required keys exist
+  return {
+    users: data.users||[],
+    votes: data.votes||{},
+    special: data.special||{},
+    top5: data.top5||{},
+    countryOrder: data.countryOrder||null,
+  };
 }
 
 async function saveState(){
@@ -247,179 +418,371 @@ async function saveState(){
     setSyncStatus("ok");
   }catch(e){setSyncStatus("err");}
 }
+function debounceSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveState,700);}
 
-function debounceSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveState,600);}
-
-// ── FIREBASE SERVER-SENT EVENTS (temps réel) ──
 let sseSource=null;
-function startFirebaseStream(){
+function startStream(){
   if(sseSource) sseSource.close();
-  sseSource=new EventSource(FB_STREAM.replace(".json",".json?accept=text/event-stream"));
+  const url=FB_URL.replace(".json",".json?accept=text/event-stream");
+  sseSource=new EventSource(url);
   sseSource.addEventListener("put",e=>{
     try{
       const msg=JSON.parse(e.data);
       if(msg.data){
-        const modalOpen=document.getElementById("modal-overlay").classList.contains("open");
+        const modalOpen=document.querySelector(".modal-overlay.open");
         if(!saveTimer&&!modalOpen){
-          state=msg.data;
+          state=mergeState(msg.data);
           renderAll();
         }
       }
     }catch(_){}
   });
-  sseSource.onerror=()=>{
-    // SSE closed by Firebase after ~30s inactivity, reconnect silently
-    setTimeout(startFirebaseStream, 2000);
-  };
+  sseSource.onerror=()=>setTimeout(startStream,3000);
 }
 
-// ── SYNC UI ──
+// ══════════════════════════════════════════════
+// SYNC UI
+// ══════════════════════════════════════════════
 function setSyncStatus(s){
-  const dot=document.getElementById("sync-dot");
-  const lbl=document.getElementById("sync-label");
-  dot.className="sync-dot "+s;
-  const map={ok:"Synchronisé · Partagé famille",saving:"Sauvegarde…",err:"Erreur de sync",loading:"Chargement…"};
-  lbl.textContent=map[s]||s;
+  document.getElementById("sync-dot").className="sync-dot "+s;
+  const map={ok:"Synchronisé · Famille",saving:"Sauvegarde…",err:"Erreur de sync",loading:"Chargement…"};
+  document.getElementById("sync-label").textContent=map[s]||s;
 }
 
-// ── TABS ──
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+const ALL_TABS=["vote","rank","results","order","admin"];
+
 function switchTab(name){
-  const names=["vote","rank","results","order"];
-  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",names[i]===name));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("tab-"+name).classList.add("active");
-  if(name==="rank") renderRank();
+  if(name==="vote")    renderVote();
+  if(name==="top5")    renderTop5();
   if(name==="results") renderResults();
-  if(name==="order") renderOrder();
+  if(name==="order")   renderOrder();
+  if(name==="admin")   renderAdmin();
 }
 
-// ── IDENTITY (localStorage — per device) ──
-const LOCAL_KEY="esc2026_identity";
-
-function getLocalIdentity(){return localStorage.getItem(LOCAL_KEY)||"";}
-function setLocalIdentity(name){localStorage.setItem(LOCAL_KEY,name);}
-function clearLocalIdentity(){localStorage.removeItem(LOCAL_KEY);}
-
-function openModal(allowCancel=false){
-  // populate existing users from Firebase state
-  const container=document.getElementById("existing-users");
-  container.innerHTML="";
-  if(state.users&&state.users.length){
-    state.users.forEach(u=>{
-      const btn=document.createElement("button");
-      btn.textContent=u;
-      btn.style.cssText="background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text);padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;";
-      btn.onclick=()=>selectExistingUser(u);
-      container.appendChild(btn);
-    });
+function buildTabs(){
+  const tabs=document.getElementById("main-tabs");
+  tabs.innerHTML="";
+  const list=[
+    {id:"vote",   label:"🗳️ Voter"},
+    {id:"top5",   label:"🏆 Top 5"},
+    {id:"results",label:"📊 Résultats"},
+  ];
+  if(isAdmin){
+    list.push({id:"order",label:"⚙️ Ordre"});
+    list.push({id:"admin",label:"🔑 Admin"});
   }
-  const cancelBtn=document.getElementById("modal-cancel-btn");
-  cancelBtn.style.display=allowCancel?"":"none";
-  document.getElementById("modal-overlay").classList.add("open");
-  setTimeout(()=>document.getElementById("new-user-input").focus(),50);
+  list.forEach((t,i)=>{
+    const el=document.createElement("div");
+    el.className="tab"+(i===0?" active":"");
+    el.dataset.tab=t.id;
+    el.textContent=t.label;
+    el.onclick=()=>switchTab(t.id);
+    tabs.appendChild(el);
+  });
 }
 
-function closeModal(){
-  // Only closeable if already has identity
-  if(!getLocalIdentity()) return;
-  document.getElementById("modal-overlay").classList.remove("open");
-  document.getElementById("new-user-input").value="";
+// ══════════════════════════════════════════════
+// MODAL HELPERS
+// ══════════════════════════════════════════════
+function closeModal(id){
+  // Don't close identity modal if no user set
+  document.getElementById(id).classList.remove("open");
+}
+function showErr(id,msg){
+  const el=document.getElementById(id);
+  el.textContent=msg;el.style.display="block";
+}
+function clearErr(id){
+  const el=document.getElementById(id);
+  if(el){el.textContent="";el.style.display="none";}
 }
 
-function changeIdentity(){openModal(true);}
+// ══════════════════════════════════════════════
+// WELCOME POPUP
+// ══════════════════════════════════════════════
+function normalize(s){
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+}
 
-function selectExistingUser(name){
-  setLocalIdentity(name);
+const WELCOME_RULES=[
+  {
+    names:["mamou","nath","maman"],
+    emoji:"💖🥰💖",
+    msg:"Je t'aime ma maman chérie !"
+  },
+  {
+    names:["papa","papou","manu"],
+    emoji:"💙😍💙",
+    msg:"Je t'aime mon Papounet !"
+  },
+  {
+    names:["anne","tatane","tata anne"],
+    emoji:"🥰💕🥰",
+    msg:"Je t'aime ma grande sœur d'amour !"
+  },
+  {
+    names:["marie","tata marie cherie","tata marie chérie"],
+    emoji:"💜🌸💜",
+    msg:"Je t'aime ma sœur Marie chérie !"
+  },
+  {
+    names:["noe","theo","gabriel","gaga"],
+    emoji:"😍🎉😍",
+    msg:"Je t'aime mon neveu adoré !"
+  },
+  {
+    names:["laura","bebe chat","bébé chat"],
+    emoji:"🐱💕😻",
+    msg:"Je t'aime mon amour de bébé chat !"
+  },
+];
+
+function getWelcomeMessage(name){
+  const n=normalize(name);
+  for(const rule of WELCOME_RULES){
+    if(rule.names.some(r=>normalize(r)===n)){
+      return{emoji:rule.emoji, msg:rule.msg};
+    }
+  }
+  return null;
+}
+
+function showWelcomePopup(name){
+  const match=getWelcomeMessage(name);
+  if(!match) return;
+  document.getElementById("welcome-emoji").textContent=match.emoji;
+  document.getElementById("welcome-msg").innerHTML=`Bienvenue <span class="welcome-name">${name}</span> !<br>${match.msg}`;
+  document.getElementById("modal-welcome").classList.add("open");
+}
+function openNewUserModal(){
+  clearErr("nu-err");
+  document.getElementById("nu-name").value="";
+  document.getElementById("nu-pw").value="";
+  document.getElementById("nu-pw2").value="";
+  document.getElementById("modal-new-user").classList.add("open");
+  setTimeout(()=>document.getElementById("nu-name").focus(),50);
+}
+
+async function confirmNewUser(){
+  const name=document.getElementById("nu-name").value.trim();
+  const pw=document.getElementById("nu-pw").value;
+  const pw2=document.getElementById("nu-pw2").value;
+  clearErr("nu-err");
+  if(!name) return showErr("nu-err","Prénom requis.");
+  if(!pw)   return showErr("nu-err","Mot de passe requis.");
+  if(pw!==pw2) return showErr("nu-err","Les mots de passe ne correspondent pas.");
+  // Re-fetch to avoid race
+  try{const r=await fetch(FB_URL);const d=await r.json();if(d) state=mergeState(d);}catch(e){}
+  if(state.users.find(u=>u.name===name)) return showErr("nu-err","Ce prénom est déjà utilisé.");
+  const h=await hashPw(pw);
+  state.users.push({name,pwHash:h});
+  if(!state.votes[name]) state.votes[name]={};
+  if(!state.special[name]) state.special[name]={};
+  setLocalId(name);
   currentUser=name;
   currentUserRank=name;
-  document.getElementById("modal-overlay").classList.remove("open");
-  document.getElementById("new-user-input").value="";
-  updateIdentityUI();
+  currentUserTop5=name;
+  closeModal("modal-new-user");
+  debounceSave();
+  renderAll();
+  showWelcomePopup(name);
+}
+
+// ══════════════════════════════════════════════
+// LOGIN MODAL
+// ══════════════════════════════════════════════
+function openLoginModal(name){
+  loginTarget=name;
+  clearErr("login-err");
+  document.getElementById("login-pw").value="";
+  document.getElementById("login-name-lbl").textContent=name;
+  document.getElementById("modal-login").classList.add("open");
+  setTimeout(()=>document.getElementById("login-pw").focus(),50);
+}
+
+async function confirmLogin(){
+  const pw=document.getElementById("login-pw").value;
+  clearErr("login-err");
+  const user=state.users.find(u=>u.name===loginTarget);
+  if(!user) return showErr("login-err","Utilisateur introuvable.");
+  const h=await hashPw(pw);
+  if(h!==user.pwHash) return showErr("login-err","Mot de passe incorrect.");
+  setLocalId(loginTarget);
+  if(loginForTop5){
+    currentUserTop5=loginTarget;
+    loginForTop5=false;
+  } else if(loginForRank){
+    currentUserRank=loginTarget;
+    loginForRank=false;
+  } else {
+    currentUser=loginTarget;
+    currentUserRank=loginTarget;
+    currentUserTop5=loginTarget;
+  }
+  closeModal("modal-login");
+  renderAll();
+}
+
+// ══════════════════════════════════════════════
+// ADMIN LOGIN
+// ══════════════════════════════════════════════
+function openAdminLogin(){
+  if(isAdmin){switchTab("admin");return;}
+  clearErr("admin-login-err");
+  document.getElementById("admin-pw-input").value="";
+  document.getElementById("modal-admin-login").classList.add("open");
+  setTimeout(()=>document.getElementById("admin-pw-input").focus(),50);
+}
+
+async function confirmAdminLogin(){
+  const pw=document.getElementById("admin-pw-input").value;
+  clearErr("admin-login-err");
+  if(pw!==ADMIN_PW) return showErr("admin-login-err","Mot de passe incorrect.");
+  isAdmin=true;
+  setLocalAdmin(true);
+  closeModal("modal-admin-login");
+  buildTabs();
+  switchTab("admin");
+}
+
+// ══════════════════════════════════════════════
+// ADMIN RESET PW MODAL
+// ══════════════════════════════════════════════
+let resetPwTarget="";
+function openResetPw(name){
+  resetPwTarget=name;
+  clearErr("reset-pw-err");
+  document.getElementById("reset-pw-name").textContent=name;
+  document.getElementById("reset-pw-val").value="";
+  document.getElementById("modal-reset-pw").classList.add("open");
+  setTimeout(()=>document.getElementById("reset-pw-val").focus(),50);
+}
+async function confirmResetPw(){
+  const pw=document.getElementById("reset-pw-val").value;
+  if(!pw) return showErr("reset-pw-err","Mot de passe requis.");
+  const user=state.users.find(u=>u.name===resetPwTarget);
+  if(!user) return showErr("reset-pw-err","Utilisateur introuvable.");
+  user.pwHash=await hashPw(pw);
+  closeModal("modal-reset-pw");
+  // Also clear local session for that user on other devices (they'll need to re-login)
+  debounceSave();
+  renderAdmin();
+}
+
+// ══════════════════════════════════════════════
+// PROFILE BUBBLES
+// ══════════════════════════════════════════════
+function renderBubbles(containerId, activeUser, onSelect){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML="";
+  if(!state.users.length){
+    el.innerHTML='<span style="font-size:12px;color:var(--muted)">Aucun profil — clique sur + Nouveau</span>';
+    return;
+  }
+  state.users.forEach(u=>{
+    const active=u.name===activeUser;
+    const btn=document.createElement("button");
+    btn.className="profile-bubble"+(active?" active":"");
+    btn.textContent=u.name;
+    btn.onclick=()=>onSelect(u.name);
+    el.appendChild(btn);
+  });
+}
+
+let loginForRank=false;
+
+function selectUserVote(name){
+  if(name===currentUser) return;
+  const saved=getLocalId();
+  if(saved===name){
+    currentUser=name;
+    renderVote();
+    return;
+  }
+  loginForRank=false;
+  openLoginModal(name);
+}
+
+function selectUserRank(name){
+  if(name===currentUserRank) return;
+  const saved=getLocalId();
+  if(saved===name){
+    currentUserRank=name;
+    renderRank();
+    return;
+  }
+  loginForRank=true;
+  openLoginModal(name);
+}
+
+// ══════════════════════════════════════════════
+// ORDERED COUNTRIES
+// ══════════════════════════════════════════════
+function getOrdered(){
+  if(!state.countryOrder||state.countryOrder.length!==COUNTRIES.length) return [...COUNTRIES];
+  return state.countryOrder.map(n=>COUNTRIES.find(c=>c.name===n)).filter(Boolean);
+}
+
+// ══════════════════════════════════════════════
+// VOTE TAB
+// ══════════════════════════════════════════════
+function renderVote(){
+  renderBubbles("bubbles-vote",currentUser,selectUserVote);
+  renderSpecialCats();
   renderVoteList();
 }
 
-async function confirmAddUser(){
-  const val=document.getElementById("new-user-input").value.trim();
-  if(!val){
-    // If nothing typed but existing selected via button → already handled
-    return;
-  }
-  // Re-fetch latest state before adding
-  try{
-    const res=await fetch(FB_URL);
-    const data=await res.json();
-    if(data) state=data;
-  }catch(e){}
-  if(!state.users) state.users=[];
-  if(!state.votes) state.votes={};
-  if(state.users.includes(val)){
-    // Name exists → just claim it for this device
-    setLocalIdentity(val);
-    currentUser=val;currentUserRank=val;
-    document.getElementById("modal-overlay").classList.remove("open");
-    document.getElementById("new-user-input").value="";
-    updateIdentityUI();
-    renderVoteList();
-    return;
-  }
-  state.users.push(val);
-  state.votes[val]={};
-  setLocalIdentity(val);
-  currentUser=val;currentUserRank=val;
-  document.getElementById("modal-overlay").classList.remove("open");
-  document.getElementById("new-user-input").value="";
-  updateIdentityUI();
-  renderVoteList();
+function renderSpecialCats(){
+  const el=document.getElementById("special-cats");
+  const sec=document.getElementById("special-section");
+  if(!currentUser){sec.style.display="none";return;}
+  sec.style.display="";
+  const uSpecial=state.special[currentUser]||{};
+  const ordered=getOrdered();
+  el.innerHTML="";
+  SPECIAL_CATS.forEach(cat=>{
+    const chosen=uSpecial[cat.id]||"";
+    const div=document.createElement("div");
+    div.className="special-cat";
+    div.innerHTML=`
+      <div class="special-cat-label">
+        <span class="special-cat-emoji">${cat.emoji}</span>
+        <span>${cat.label}</span>
+      </div>
+      <select class="special-select${chosen?" chosen":""}" onchange="setSpecial('${cat.id}',this.value)">
+        <option value="">— Choisir un pays —</option>
+        ${ordered.map(c=>`<option value="${c.name}"${c.name===chosen?" selected":""}>${c.flag} ${c.name}</option>`).join("")}
+      </select>
+    `;
+    el.appendChild(div);
+  });
+}
+
+function setSpecial(catId, value){
+  if(!currentUser) return;
+  if(!state.special[currentUser]) state.special[currentUser]={};
+  state.special[currentUser][catId]=value;
+  renderSpecialCats();
   debounceSave();
 }
 
-function updateIdentityUI(){
-  // Profile bubbles — shared renderer
-  function renderBubbles(containerId, activeUser, onSwitch){
-    const container=document.getElementById(containerId);
-    if(!container) return;
-    container.innerHTML="";
-    const users=state.users||[];
-    users.forEach(u=>{
-      const active=u===activeUser;
-      const btn=document.createElement("button");
-      btn.textContent=u;
-      btn.style.cssText=`padding:7px 16px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:${active?"700":"500"};cursor:pointer;transition:all .15s;background:${active?"var(--accent)":"var(--surface2)"};color:${active?"#000":"var(--text)"};border:2px solid ${active?"var(--accent)":"var(--border)"};`;
-      btn.onclick=()=>onSwitch(u);
-      container.appendChild(btn);
-    });
-    if(!users.length){
-      container.innerHTML='<span style="font-size:12px;color:var(--muted)">Aucun profil — clique sur + Nouveau</span>';
-    }
-  }
-  renderBubbles("profile-bubbles", currentUser, u=>{
-    currentUser=u; setLocalIdentity(u); updateIdentityUI(); renderVoteList();
-  });
-  renderBubbles("profile-bubbles-rank", currentUserRank, u=>{
-    currentUserRank=u; setLocalIdentity(u); currentUser=u; updateIdentityUI(); renderRank();
-  });
-}
-
-function switchUser(name){
-  currentUser=name;
-  currentUserRank=name;
-  setLocalIdentity(name);
-  updateIdentityUI();
-  renderVoteList();
-}
-
-function changeIdentity(){openModal(true);}
-
-// ── VOTE LIST ──
 function renderVoteList(){
   const el=document.getElementById("vote-list");
   if(!currentUser){
-    el.innerHTML='<div class="no-voter">Sélectionne ton prénom pour voter, ou ajoute-toi avec <b>+</b></div>';
+    el.innerHTML='<div class="no-voter">Sélectionne ton profil pour voter.</div>';
     return;
   }
-  const uv=state.votes[currentUser]||{};
+  if(!state.votes[currentUser]) state.votes[currentUser]={};
+  const uv=state.votes[currentUser];
   const rated=Object.values(uv).filter(v=>v.rating).length;
-  const ordered=getOrderedCountries();
+  const ordered=getOrdered();
   let html=`<p class="vote-count"><b>${rated}</b>/${ordered.length} pays notés</p>`;
   ordered.forEach((c,i)=>{
     const vote=uv[c.name]||{};
@@ -448,6 +811,7 @@ function renderVoteList(){
   });
   el.innerHTML=html;
 }
+
 function setRating(name,val){
   if(!currentUser) return;
   if(!state.votes[currentUser]) state.votes[currentUser]={};
@@ -457,224 +821,19 @@ function setRating(name,val){
   debounceSave();
 }
 
-// ── ORDERED COUNTRIES (respects custom order stored in state) ──
-function getOrderedCountries(){
-  const base=[...COUNTRIES];
-  if(!state.countryOrder||state.countryOrder.length!==COUNTRIES.length) return base;
-  return state.countryOrder.map(name=>COUNTRIES.find(c=>c.name===name)).filter(Boolean);
-}
-
-// ── ORDER TAB ──
-let orderDragSrc=null;
-function renderOrder(){
-  const el=document.getElementById("order-list");
-  el.innerHTML="";
-  const ordered=getOrderedCountries();
-  ordered.forEach((c,idx)=>{
-    const div=document.createElement("div");
-    div.className="order-card";
-    div.draggable=true;
-    div.dataset.idx=idx;
-    div.innerHTML=`
-      <span class="order-num">${idx+1}</span>
-      <span style="font-size:22px">${c.flag}</span>
-      <div class="order-info">
-        <div class="order-name">${c.name}</div>
-        <div class="order-artist">${c.artist} · <em style="color:var(--muted)">${c.song}</em></div>
-      </div>
-      <span style="color:var(--muted);font-size:16px">⠿</span>
-    `;
-    // Desktop drag
-    div.addEventListener("dragstart",()=>{orderDragSrc=idx;div.classList.add("dragging");});
-    div.addEventListener("dragend",()=>div.classList.remove("dragging"));
-    div.addEventListener("dragover",e=>{e.preventDefault();div.classList.add("drag-over");});
-    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
-    div.addEventListener("drop",e=>{
-      e.preventDefault();div.classList.remove("drag-over");
-      if(orderDragSrc!==null&&orderDragSrc!==idx) reorderCountry(orderDragSrc,idx);
-    });
-    // Touch drag
-    let tY=0,tSrc=idx;
-    div.addEventListener("touchstart",e=>{tY=e.touches[0].clientY;tSrc=idx;},{passive:true});
-    div.addEventListener("touchmove",e=>{
-      e.preventDefault();
-      div.style.transform=`translateY(${e.touches[0].clientY-tY}px)`;
-      div.style.opacity="0.6";div.style.zIndex="50";
-      document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
-      const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
-      const tc=t&&t.closest(".order-card");
-      if(tc&&tc!==div) tc.classList.add("drag-over");
-    },{passive:false});
-    div.addEventListener("touchend",e=>{
-      div.style.transform="";div.style.opacity="";div.style.zIndex="";
-      const t=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-      const tc=t&&t.closest(".order-card");
-      document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
-      if(tc&&tc!==div){const ti=parseInt(tc.dataset.idx);if(!isNaN(ti)) reorderCountry(tSrc,ti);}
-    });
-    el.appendChild(div);
-  });
-}
-function reorderCountry(from,to){
-  const ordered=getOrderedCountries().map(c=>c.name);
-  const moved=ordered.splice(from,1)[0];
-  ordered.splice(to,0,moved);
-  state.countryOrder=ordered;
-  renderOrder();
-  debounceSave();
-}
-function resetOrder(){
-  if(!confirm("Remettre l'ordre officiel Eurovision ?")) return;
-  state.countryOrder=COUNTRIES.map(c=>c.name);
-  renderOrder();
-  debounceSave();
-}
-function getRanked(user){
-  const uv=state.votes[user]||{};
-  const rated=COUNTRIES.filter(c=>uv[c.name]&&uv[c.name].rating);
-  rated.sort((a,b)=>{
-    const ra=uv[a.name].rank||9999,rb=uv[b.name].rank||9999;
-    if(ra!==rb) return ra-rb;
-    const va=uv[a.name].rating||0,vb=uv[b.name].rating||0;
-    if(vb!==va) return vb-va;
-    return a.pos-b.pos;
-  });
-  return rated;
-}
-
-let dragSrcIdx=null;
-
-function renderRank(){
-  const el=document.getElementById("rank-list");
-  if(!currentUserRank){
-    el.innerHTML='<div class="no-voter">Identité non configurée.</div>';return;
-  }
-  const ranked=getRanked(currentUserRank);
-  if(!ranked.length){
-    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Note des pays dans l\'onglet Voter.</div>';return;
-  }
-  el.innerHTML="";
-  ranked.forEach((c,idx)=>{
-    const div=document.createElement("div");
-    div.className="rank-card";
-    div.draggable=true;
-    div.dataset.idx=idx;
-    const posClass="rank-pos"+(idx===0?" gold":idx===1?" silver":idx===2?" bronze":"");
-    const vote=state.votes[currentUserRank][c.name]||{};
-    div.innerHTML=`
-      <span class="${posClass}">${idx+1}</span>
-      <span style="font-size:22px">${c.flag}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
-        <div style="font-size:11px;color:var(--muted)">${c.artist}</div>
-      </div>
-      <span style="font-size:18px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>
-      <span style="color:var(--muted);font-size:16px;padding-left:4px">⠿</span>
-    `;
-    // Desktop drag
-    div.addEventListener("dragstart",()=>{dragSrcIdx=idx;div.classList.add("dragging");});
-    div.addEventListener("dragend",()=>div.classList.remove("dragging"));
-    div.addEventListener("dragover",e=>{e.preventDefault();div.classList.add("drag-over");});
-    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
-    div.addEventListener("drop",e=>{
-      e.preventDefault();div.classList.remove("drag-over");
-      if(dragSrcIdx!==null&&dragSrcIdx!==idx) swapRank(dragSrcIdx,idx);
-    });
-    // Touch drag
-    let tStartY=0,tSrcIdx=idx;
-    div.addEventListener("touchstart",e=>{tStartY=e.touches[0].clientY;tSrcIdx=idx;},{passive:true});
-    div.addEventListener("touchmove",e=>{
-      e.preventDefault();
-      div.style.transform=`translateY(${e.touches[0].clientY-tStartY}px)`;
-      div.style.opacity="0.6";div.style.zIndex="50";
-      document.querySelectorAll(".rank-card").forEach(d=>d.classList.remove("drag-over"));
-      const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
-      const tc=t&&t.closest(".rank-card");
-      if(tc&&tc!==div) tc.classList.add("drag-over");
-    },{passive:false});
-    div.addEventListener("touchend",e=>{
-      div.style.transform="";div.style.opacity="";div.style.zIndex="";
-      const t=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-      const tc=t&&t.closest(".rank-card");
-      document.querySelectorAll(".rank-card").forEach(d=>d.classList.remove("drag-over"));
-      if(tc&&tc!==div){const ti=parseInt(tc.dataset.idx);if(!isNaN(ti)) swapRank(tSrcIdx,ti);}
-    });
-    el.appendChild(div);
-  });
-}
-function swapRank(from,to){
-  if(!currentUserRank) return;
-  const ranked=getRanked(currentUserRank);
-  ranked.forEach((c,i)=>{if(!state.votes[currentUserRank][c.name]) state.votes[currentUserRank][c.name]={};state.votes[currentUserRank][c.name].rank=i+1;});
-  const names=ranked.map(c=>c.name);
-  const moved=names.splice(from,1)[0];
-  names.splice(to,0,moved);
-  names.forEach((n,i)=>{state.votes[currentUserRank][n].rank=i+1;});
-  renderRank();debounceSave();
-}
-
-// ── RESULTS ──
-function renderResults(){
-  const el=document.getElementById("results-list");
-  const meta=document.getElementById("results-meta");
-  const voters=state.users.filter(u=>Object.values(state.votes[u]||{}).some(v=>v.rating));
-  if(!voters.length){meta.textContent="";el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Aucun vote pour l\'instant.</div>';return;}
-  meta.textContent=`${voters.length} votant${voters.length>1?"s":""} : ${voters.join(", ")}`;
-  const scores=COUNTRIES.map(c=>{
-    const ratings=voters.map(u=>(state.votes[u][c.name]||{}).rating).filter(r=>r>0);
-    const avg=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:0;
-    return{c,avg,voters:voters.filter(u=>(state.votes[u][c.name]||{}).rating>0)};
-  }).filter(x=>x.avg>0).sort((a,b)=>b.avg-a.avg);
-  el.innerHTML="";
-  scores.forEach((item,idx)=>{
-    const pct=Math.round((item.avg/5)*100);
-    const pills=item.voters.map(u=>{const r=(state.votes[u][item.c.name]||{}).rating;return`<span class="voter-pill">${u}: <span>${r?EMOJIS[r-1].e:""}</span></span>`;}).join("");
-    const div=document.createElement("div");div.className="result-bar-wrap";
-    div.innerHTML=`
-      <span class="result-pos">${idx+1}</span>
-      <span style="font-size:22px">${item.c.flag}</span>
-      <div class="result-bar-info">
-        <div class="result-bar-label">
-          <span style="font-weight:600;font-size:13px">${item.c.name}</span>
-          <span class="result-score">${item.avg.toFixed(1)}/5</span>
-        </div>
-        <div class="result-bar-bg"><div class="result-bar-fill" style="width:${pct}%"></div></div>
-        <div class="voter-pills">${pills}</div>
-      </div>`;
-    el.appendChild(div);
-  });
-}
-
-// ── RENDER ALL ──
-function renderAll(){
-  updateIdentityUI();
-  const activeTab=document.querySelector(".tab.active");
-  const names=["vote","rank","results","order"];
-  const idx=Array.from(document.querySelectorAll(".tab")).indexOf(activeTab);
-  if(idx===0) renderVoteList();
-  if(idx===1) renderRank();
-  if(idx===2) renderResults();
-  if(idx===3) renderOrder();
-}
-
-// ── AUDIO PREVIEW (iTunes Search API) ──
-let currentAudio=null;
-let currentAudioIdx=null;
+// ══════════════════════════════════════════════
+// AUDIO PREVIEW
+// ══════════════════════════════════════════════
+let currentAudio=null,currentAudioIdx=null;
 const previewCache={};
+function fmt(s){return Math.floor(s/60)+":"+(Math.floor(s%60)+"").padStart(2,"0");}
 
-function fmt(s){const m=Math.floor(s/60);return m+":"+(Math.floor(s%60)+'').padStart(2,'0');}
-
-async function togglePreview(idx, countryName){
+async function togglePreview(idx,countryName){
   const btn=document.getElementById("pbtn-"+idx);
   const bar=document.getElementById("abar-"+idx);
-
-  // If same card is playing → stop
-  if(currentAudioIdx===idx && currentAudio && !currentAudio.paused){
-    currentAudio.pause();
-    btn.textContent="▶";btn.classList.remove("playing");
-    return;
+  if(currentAudioIdx===idx&&currentAudio&&!currentAudio.paused){
+    currentAudio.pause();btn.textContent="▶";btn.classList.remove("playing");return;
   }
-  // Stop any other playing audio
   if(currentAudio){
     currentAudio.pause();
     if(currentAudioIdx!==null){
@@ -684,20 +843,13 @@ async function togglePreview(idx, countryName){
       if(obb) obb.classList.remove("open");
     }
   }
-
-  // Already cached?
   if(previewCache[countryName]==="none"){
-    bar.innerHTML='<div class="audio-not-found">Aperçu non disponible pour cette chanson.</div>';
+    bar.innerHTML='<div class="audio-not-found">Aperçu non disponible.</div>';
     bar.classList.add("open");return;
   }
-  if(previewCache[countryName]){
-    playPreview(idx, previewCache[countryName], countryName);return;
-  }
-
-  // Fetch from iTunes
+  if(previewCache[countryName]){playPreview(idx,previewCache[countryName]);return;}
   btn.classList.add("loading");btn.textContent="…";
-  const ordered=getOrderedCountries();
-  const c=ordered.find(x=>x.name===countryName);
+  const c=getOrdered().find(x=>x.name===countryName);
   const q=encodeURIComponent((c?c.artist+" "+c.song:countryName));
   try{
     const res=await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=3&country=FR`);
@@ -706,55 +858,404 @@ async function togglePreview(idx, countryName){
     btn.classList.remove("loading");
     if(!track){
       previewCache[countryName]="none";
-      bar.innerHTML='<div class="audio-not-found">Aperçu non disponible pour cette chanson.</div>';
-      bar.classList.add("open");
-      btn.textContent="▶";return;
+      bar.innerHTML='<div class="audio-not-found">Aperçu non disponible.</div>';
+      bar.classList.add("open");btn.textContent="▶";return;
     }
     previewCache[countryName]=track.previewUrl;
-    playPreview(idx, track.previewUrl, countryName);
-  }catch(e){
-    btn.classList.remove("loading");btn.textContent="▶";
-    bar.innerHTML='<div class="audio-not-found">Erreur réseau.</div>';
-    bar.classList.add("open");
-  }
+    playPreview(idx,track.previewUrl);
+  }catch(e){btn.classList.remove("loading");btn.textContent="▶";}
 }
 
-function playPreview(idx, url, countryName){
+function playPreview(idx,url){
   const btn=document.getElementById("pbtn-"+idx);
   const bar=document.getElementById("abar-"+idx);
   const prog=document.getElementById("aprog-"+idx);
   const timeEl=document.getElementById("atime-"+idx);
   const durEl=document.getElementById("adur-"+idx);
   if(!btn||!bar) return;
-
   const audio=new Audio(url);
   currentAudio=audio;currentAudioIdx=idx;
-
-  audio.addEventListener("loadedmetadata",()=>{
-    if(durEl) durEl.textContent=fmt(audio.duration);
-  });
+  audio.addEventListener("loadedmetadata",()=>{if(durEl) durEl.textContent=fmt(audio.duration);});
   audio.addEventListener("timeupdate",()=>{
     if(!prog||!timeEl) return;
-    const pct=audio.duration?(audio.currentTime/audio.duration)*100:0;
-    prog.style.width=pct+"%";
+    prog.style.width=(audio.duration?(audio.currentTime/audio.duration)*100:0)+"%";
     timeEl.textContent=fmt(audio.currentTime);
   });
-  audio.addEventListener("ended",()=>{
-    btn.textContent="▶";btn.classList.remove("playing");
-    if(prog) prog.style.width="0%";
-  });
+  audio.addEventListener("ended",()=>{btn.textContent="▶";btn.classList.remove("playing");if(prog) prog.style.width="0%";});
   audio.play();
-  bar.classList.add("open");
-  btn.textContent="⏸";btn.classList.add("playing");
+  bar.classList.add("open");btn.textContent="⏸";btn.classList.add("playing");
 }
-
-function seekAudio(e, idx){
+function seekAudio(e,idx){
   if(!currentAudio||currentAudioIdx!==idx) return;
   const rect=e.currentTarget.getBoundingClientRect();
-  const pct=(e.clientX-rect.left)/rect.width;
-  currentAudio.currentTime=pct*currentAudio.duration;
+  currentAudio.currentTime=((e.clientX-rect.left)/rect.width)*currentAudio.duration;
 }
 
+// ══════════════════════════════════════════════
+// TOP 5 TAB
+// ══════════════════════════════════════════════
+const TOP5_PTS=[12,10,8,7,6];
+const TOP5_PTS_CLASS=["p12","p10","p8","p7","p6"];
+
+function getAutoTop5(user){
+  // Get all rated countries sorted by rating desc, then passage order
+  const uv=state.votes[user]||{};
+  const rated=getOrdered().filter(c=>uv[c.name]&&uv[c.name].rating>0);
+  rated.sort((a,b)=>{
+    const va=uv[a.name].rating,vb=uv[b.name].rating;
+    if(vb!==va) return vb-va;
+    return a.pos-b.pos;
+  });
+  return rated.slice(0,5);
+}
+
+function getUserTop5(user){
+  // Returns top5 respecting custom order if set, else auto
+  const saved=state.top5&&state.top5[user];
+  if(saved&&saved.length){
+    // Validate all names still exist and are rated
+    const uv=state.votes[user]||{};
+    const valid=saved.filter(n=>getOrdered().find(c=>c.name===n)&&uv[n]&&uv[n].rating>0);
+    if(valid.length===5) return valid.map(n=>getOrdered().find(c=>c.name===n));
+  }
+  return getAutoTop5(user);
+}
+
+function saveTop5Order(user, names){
+  if(!state.top5) state.top5={};
+  state.top5[user]=names;
+  debounceSave();
+}
+
+let top5DragSrc=null;
+let currentUserTop5="";
+
+function selectUserTop5(name){
+  if(name===currentUserTop5) return;
+  const saved=getLocalId();
+  if(saved===name){
+    currentUserTop5=name;
+    renderTop5();
+    return;
+  }
+  loginForTop5=true;
+  loginForRank=false;
+  openLoginModal(name);
+}
+let loginForTop5=false;
+
+function renderTop5(){
+  renderBubbles("bubbles-top5", currentUserTop5||currentUser, selectUserTop5);
+  const user=currentUserTop5||currentUser;
+  const el=document.getElementById("top5-list");
+  const elRem=document.getElementById("top5-remaining");
+
+  if(!user){
+    el.innerHTML='<div class="no-voter">Sélectionne ton profil.</div>';
+    elRem.innerHTML="";return;
+  }
+
+  const uv=state.votes[user]||{};
+  const rated=getOrdered().filter(c=>uv[c.name]&&uv[c.name].rating>0);
+  if(rated.length<1){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:28px;font-size:13px;">Note des pays dans l\'onglet Voter pour générer ton top 5.</div>';
+    elRem.innerHTML="";return;
+  }
+
+  const top5=getUserTop5(user);
+  el.innerHTML="";
+
+  // Build current rank assignment from saved top5
+  // rankMap[countryName] = position (1-5)
+  const rankMap={};
+  top5.forEach((c,i)=>{ rankMap[c.name]=i+1; });
+
+  top5.forEach((c,idx)=>{
+    const pts=TOP5_PTS[idx];
+    const ptsClass=TOP5_PTS_CLASS[idx];
+    const vote=uv[c.name]||{};
+    const div=document.createElement("div");
+    div.className="top5-card";
+    div.innerHTML=`
+      <span class="top5-pts ${ptsClass}">${pts}</span>
+      <span style="font-size:22px">${c.flag}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${c.artist}</div>
+      </div>
+      <span style="font-size:16px;margin-right:4px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>
+      <input type="number" class="top5-rank-input" id="rank-input-${idx}"
+        min="1" max="5" value="${idx+1}"
+        data-country="${c.name}" data-user="${user}" />`;
+    el.appendChild(div);
+  });
+
+  // Attach events after all inputs rendered
+  top5.forEach((c,idx)=>{
+    const input=document.getElementById("rank-input-"+idx);
+    input.addEventListener("input",()=>handleRankInput(user, top5));
+    input.addEventListener("keydown",e=>{
+      if(!/[1-5]|Backspace|Tab|ArrowLeft|ArrowRight/.test(e.key)) e.preventDefault();
+    });
+  });
+
+  // Show remaining rated countries not in top5
+  const top5Names=new Set(top5.map(c=>c.name));
+  const others=rated.filter(c=>!top5Names.has(c.name));
+  if(others.length){
+    elRem.innerHTML=`<p class="top5-remaining-hdr">Autres pays notés</p>`;
+    others.forEach(c=>{
+      const vote=uv[c.name]||{};
+      const d=document.createElement("div");d.className="top5-other";
+      d.innerHTML=`<span style="font-size:20px">${c.flag}</span>
+        <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px">${c.name}</div></div>
+        <span style="font-size:16px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>`;
+      elRem.appendChild(d);
+    });
+  } else {
+    elRem.innerHTML="";
+  }
+}
+
+function handleRankInput(user, top5){
+  const inputs=top5.map((c,i)=>document.getElementById("rank-input-"+i));
+  const values=inputs.map(inp=>parseInt(inp.value));
+
+  // Validate: must be 1-5, no duplicates
+  const seen=new Set();
+  let allValid=true;
+  inputs.forEach((inp,i)=>{
+    const v=values[i];
+    inp.classList.remove("valid","duplicate");
+    if(!v||v<1||v>5){inp.classList.add("duplicate");allValid=false;return;}
+    if(seen.has(v)){inp.classList.add("duplicate");allValid=false;}
+    else{inp.classList.add("valid");seen.add(v);}
+  });
+
+  // Also mark first occurrence of duplicate as invalid
+  if(!allValid){
+    const counts={};
+    values.forEach(v=>{ if(v) counts[v]=(counts[v]||0)+1; });
+    inputs.forEach((inp,i)=>{
+      const v=values[i];
+      if(v&&counts[v]>1){ inp.classList.remove("valid"); inp.classList.add("duplicate"); }
+    });
+  }
+
+  if(!allValid) return;
+
+  // All valid — reorder top5 by assigned rank
+  const pairs=top5.map((c,i)=>({c,rank:values[i]}));
+  pairs.sort((a,b)=>a.rank-b.rank);
+  saveTop5Order(user, pairs.map(p=>p.c.name));
+  // Re-render to update pts labels
+  setTimeout(()=>renderTop5(), 300);
+}
+
+// ══════════════════════════════════════════════
+// RESULTS TAB
+// ══════════════════════════════════════════════
+function renderResults(){
+  const el=document.getElementById("results-list");
+  const meta=document.getElementById("results-meta");
+  const voters=state.users.filter(u=>Object.values(state.votes[u.name]||{}).some(v=>v.rating));
+  if(!voters.length){meta.textContent="";el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Aucun vote pour l\'instant.</div>';return;}
+  meta.textContent=`${voters.length} votant${voters.length>1?"s":""} : ${voters.map(u=>u.name).join(", ")}`;
+  el.innerHTML="";
+
+  // Compute scores: avg rating (0-5) + Eurovision top5 points
+  const scoreMap={};
+  getOrdered().forEach(c=>{
+    const ratings=voters.map(u=>(state.votes[u.name][c.name]||{}).rating).filter(r=>r>0);
+    const avg=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:0;
+    // Eurovision points from top5
+    let escPts=0;
+    voters.forEach(u=>{
+      const t5=getUserTop5(u.name);
+      const rank=t5.findIndex(x=>x.name===c.name);
+      if(rank>=0) escPts+=TOP5_PTS[rank];
+    });
+    scoreMap[c.name]={c,avg,escPts,total:avg+escPts,voters:voters.filter(u=>(state.votes[u.name][c.name]||{}).rating>0)};
+  });
+
+  const scores=Object.values(scoreMap).filter(x=>x.avg>0||x.escPts>0).sort((a,b)=>b.total-a.total);
+  const maxTotal=scores[0]?.total||1;
+
+  // Aggregated ranking
+  const mainDiv=document.createElement("div");mainDiv.className="result-section";
+  mainDiv.innerHTML=`<div class="result-section-title">🏆 Classement agrégé</div>
+    <p style="font-size:10px;color:var(--muted);margin-bottom:10px;">Score = note moyenne /5 + points Eurovision du top 5 (12·10·8·7·6)</p>`;
+  scores.forEach((item,idx)=>{
+    const pct=Math.round((item.total/maxTotal)*100);
+    const pills=item.voters.map(u=>{
+      const r=(state.votes[u.name][item.c.name]||{}).rating;
+      const t5=getUserTop5(u.name);
+      const rank=t5.findIndex(x=>x.name===item.c.name);
+      const pts=rank>=0?` +${TOP5_PTS[rank]}pts`:"";
+      return`<span class="voter-pill">${u.name}: <span>${r?EMOJIS[r-1].e:""}${pts}</span></span>`;
+    }).join("");
+    const d=document.createElement("div");d.className="result-bar-wrap";
+    d.innerHTML=`<span class="result-pos">${idx+1}</span><span style="font-size:20px">${item.c.flag}</span>
+      <div class="result-bar-info">
+        <div class="result-bar-label">
+          <span style="font-weight:600;font-size:12px">${item.c.name}</span>
+          <span class="result-score">${item.avg.toFixed(1)}/5 · ${item.escPts}pts</span>
+        </div>
+        <div class="result-bar-bg"><div class="result-bar-fill" style="width:${pct}%"></div></div>
+        <div class="voter-pills">${pills}</div>
+      </div>`;
+    mainDiv.appendChild(d);
+  });
+  el.appendChild(mainDiv);
+
+  // Special categories
+  const specDiv=document.createElement("div");specDiv.className="result-section";
+  specDiv.innerHTML=`<div class="result-section-title">⭐ Catégories spéciales</div>`;
+  SPECIAL_CATS.forEach(cat=>{
+    const catDiv=document.createElement("div");catDiv.className="special-result-card";
+    const counts={};
+    voters.forEach(u=>{
+      const v=(state.special[u.name]||{})[cat.id];
+      if(v) counts[v]=(counts[v]||[]).concat(u.name);
+    });
+    const sorted=Object.entries(counts).sort((a,b)=>b[1].length-a[1].length);
+    catDiv.innerHTML=`<div class="special-result-row">
+      <span style="font-size:20px">${cat.emoji}</span>
+      <span style="font-weight:600;font-size:13px">${cat.label}</span>
+    </div>`;
+    if(!sorted.length){
+      catDiv.innerHTML+=`<div class="special-vote-detail">Aucun vote.</div>`;
+    } else {
+      sorted.forEach((entry,i)=>{
+        const cc=getOrdered().find(c=>c.name===entry[0]);
+        if(!cc) return;
+        catDiv.innerHTML+=`<div class="special-result-row" style="margin-top:6px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:16px;min-width:22px;color:${i===0?"var(--accent)":"var(--muted)"};">${i+1}</span>
+          <span style="font-size:20px">${cc.flag}</span>
+          <span style="font-size:13px;font-weight:${i===0?"600":"400"}">${cc.name}</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--muted)">${entry[1].join(", ")}</span>
+        </div>`;
+      });
+    }
+    specDiv.appendChild(catDiv);
+  });
+  el.appendChild(specDiv);
+}
+
+// ══════════════════════════════════════════════
+// ORDER TAB (admin only)
+// ══════════════════════════════════════════════
+let orderDragSrc=null;
+function renderOrder(){
+  const el=document.getElementById("order-list");el.innerHTML="";
+  const ordered=getOrdered();
+  ordered.forEach((c,idx)=>{
+    const div=document.createElement("div");
+    div.className="order-card";div.draggable=true;div.dataset.idx=idx;
+    div.innerHTML=`<span class="order-num">${idx+1}</span><span style="font-size:21px">${c.flag}</span>
+      <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+      <div style="font-size:11px;color:var(--muted)">${c.artist}</div></div>
+      <span style="color:var(--muted);font-size:15px">⠿</span>`;
+    div.addEventListener("dragstart",()=>{orderDragSrc=idx;div.classList.add("dragging");});
+    div.addEventListener("dragend",()=>div.classList.remove("dragging"));
+    div.addEventListener("dragover",e=>{e.preventDefault();div.classList.add("drag-over");});
+    div.addEventListener("dragleave",()=>div.classList.remove("drag-over"));
+    div.addEventListener("drop",e=>{e.preventDefault();div.classList.remove("drag-over");if(orderDragSrc!==null&&orderDragSrc!==idx) reorderCountry(orderDragSrc,idx);});
+    let tY=0,tSrc=idx;
+    div.addEventListener("touchstart",e=>{tY=e.touches[0].clientY;tSrc=idx;},{passive:true});
+    div.addEventListener("touchmove",e=>{
+      e.preventDefault();div.style.transform=`translateY(${e.touches[0].clientY-tY}px)`;div.style.opacity="0.6";div.style.zIndex="50";
+      document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
+      const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);
+      const tc=t&&t.closest(".order-card");if(tc&&tc!==div) tc.classList.add("drag-over");
+    },{passive:false});
+    div.addEventListener("touchend",e=>{
+      div.style.transform="";div.style.opacity="";div.style.zIndex="";
+      const t=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+      const tc=t&&t.closest(".order-card");document.querySelectorAll(".order-card").forEach(d=>d.classList.remove("drag-over"));
+      if(tc&&tc!==div){const ti=parseInt(tc.dataset.idx);if(!isNaN(ti)) reorderCountry(tSrc,ti);}
+    });
+    el.appendChild(div);
+  });
+}
+function reorderCountry(from,to){
+  const names=getOrdered().map(c=>c.name);
+  const moved=names.splice(from,1)[0];names.splice(to,0,moved);
+  state.countryOrder=names;renderOrder();debounceSave();
+}
+function resetOrder(){
+  if(!confirm("Remettre l'ordre officiel Eurovision ?")) return;
+  state.countryOrder=COUNTRIES.map(c=>c.name);renderOrder();debounceSave();
+}
+
+// ══════════════════════════════════════════════
+// ADMIN TAB
+// ══════════════════════════════════════════════
+function renderAdmin(){
+  const el=document.getElementById("admin-users");el.innerHTML="";
+  if(!state.users.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Aucun utilisateur.</div>';return;}
+  state.users.forEach(u=>{
+    const voteCount=Object.values(state.votes[u.name]||{}).filter(v=>v.rating).length;
+    const specialCount=Object.values(state.special[u.name]||{}).filter(v=>v).length;
+    const div=document.createElement("div");div.className="admin-user-card";
+    div.innerHTML=`<div class="admin-user-header">
+      <span style="font-size:20px">👤</span>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${u.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${voteCount} votes · ${specialCount}/4 catégories spéciales</div>
+      </div>
+    </div>
+    <div class="admin-user-actions">
+      <button class="admin-action-btn btn-warn" onclick="openResetPw('${u.name}')">🔑 Réinitialiser MDP</button>
+      <button class="admin-action-btn btn-danger" onclick="adminDeleteVotes('${u.name}')">🗑️ Supprimer votes</button>
+      <button class="admin-action-btn btn-danger" onclick="adminDeleteUser('${u.name}')">❌ Supprimer utilisateur</button>
+    </div>`;
+    el.appendChild(div);
+  });
+}
+
+function adminLogout(){
+  isAdmin=false;
+  setLocalAdmin(false);
+  buildTabs();
+  switchTab("vote");
+}
+
+function adminDeleteVotes(name){
+  if(!confirm(`Supprimer tous les votes de ${name} ?`)) return;
+  state.votes[name]={};state.special[name]={};state.top5[name]=[];
+  debounceSave();renderAdmin();
+}
+function adminDeleteUser(name){
+  if(!confirm(`Supprimer l'utilisateur ${name} et tous ses votes ?`)) return;
+  state.users=state.users.filter(u=>u.name!==name);
+  delete state.votes[name];delete state.special[name];delete state.top5[name];
+  if(currentUser===name){currentUser="";setLocalId("");}
+  debounceSave();renderAll();
+}
+function adminResetAll(){
+  if(!confirm("⚠️ Remettre à zéro TOUS les votes de TOUS les utilisateurs ?")) return;
+  state.users.forEach(u=>{state.votes[u.name]={};state.special[u.name]={};state.top5[u.name]=[];});
+  debounceSave();renderAll();
+}
+
+// ══════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════
+function renderAll(){
+  buildTabs();
+  const active=document.querySelector(".tab.active");
+  const name=active?active.dataset.tab:"vote";
+  if(name==="vote")    renderVote();
+  if(name==="top5")    renderTop5();
+  if(name==="results") renderResults();
+  if(name==="order")   renderOrder();
+  if(name==="admin")   renderAdmin();
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
 loadState();
 </script>
 </body>
