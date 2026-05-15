@@ -381,16 +381,88 @@ const SPECIAL_CATS=[
 ];
 
 const ADMIN_PW="Admin123!!";
-const FB_URL="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision.json";
+const FB_BASE="https://eurovision2026-9343a-default-rtdb.europe-west1.firebasedatabase.app/eurovision";
+
+async function fbPatch(path, data){
+  await fetch(`${FB_BASE}/${path}.json`,{
+    method:"PATCH",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  });
+}
+async function fbPut(path, data){
+  await fetch(`${FB_BASE}/${path}.json`,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(data)
+  });
+}
+async function fbDelete(path){
+  await fetch(`${FB_BASE}/${path}.json`,{method:"DELETE"});
+}
+
+// Pending writes queue — batches granular saves
+const pendingWrites={};
+let saveTimer=null;
+
+function queueWrite(path, data){
+  pendingWrites[path]=data;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(flushWrites, 600);
+}
+
+async function flushWrites(){
+  setSyncStatus("saving");
+  const writes={...pendingWrites};
+  Object.keys(pendingWrites).forEach(k=>delete pendingWrites[k]);
+  try{
+    // Group writes by top-level key to minimize requests
+    // Build a single PATCH on the root
+    const patch={};
+    Object.entries(writes).forEach(([path,data])=>{
+      patch[path]=data;
+    });
+    await fetch(`${FB_BASE}.json`,{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(patch)
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
+}
+
+function debounceSave(){
+  // Legacy: flush everything — used for bulk ops (admin reset, order change)
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveFullState(),700);
+}
+
+async function saveFullState(){
+  setSyncStatus("saving");
+  try{
+    await fetch(`${FB_BASE}.json`,{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        votes: state.votes,
+        special: state.special,
+        top5: state.top5,
+        countryOrder: state.countryOrder||null,
+      })
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
+}
 
 // ══════════════════════════════════════════════
 // STATE
-// state.users = [{name, pwHash}]
-// state.votes = { "Alex": { "France": {rating:5, rank:2}, ... } }
-// state.special = { "Alex": { funny:"France", outfit:"Suède", ... } }
-// state.countryOrder = ["Danemark", "Allemagne", ...]
+// state.users = { "Alex": {pwHash}, "Laura": {pwHash} }
+// state.votes = { "Alex": { "France": {rating:5}, ... } }
+// state.special = { "Alex": { funny:"France", ... } }
+// state.top5 = { "Alex": ["France",...] }
+// state.countryOrder = ["Danemark", ...]
 // ══════════════════════════════════════════════
-let state={users:[],votes:{},special:{},countryOrder:null};
+let state={users:{},votes:{},special:{},top5:{},countryOrder:null};
 let currentUser="";
 let currentUserRank="";
 let isAdmin=false;
@@ -433,30 +505,25 @@ function setLocalAdmin(v){if(v) localStorage.setItem(LS_ADMIN,"1"); else localSt
 async function loadState(){
   setSyncStatus("loading");
   try{
-    const res=await fetch(FB_URL);
+    const res=await fetch(`${FB_BASE}.json`);
     const data=await res.json();
     if(data) state=mergeState(data);
     setSyncStatus("ok");
   }catch(e){setSyncStatus("err");}
 
-  // Restore identity
   const saved=getLocalId();
-  if(saved && state.users.find(u=>u.name===saved)){
-    currentUser=saved;
-    currentUserRank=saved;
-    currentUserTop5=saved;
-    addLocalAuthed(saved); // ensure current is in authed list
+  if(saved && state.users[saved]){
+    currentUser=saved;currentUserRank=saved;currentUserTop5=saved;
+    addLocalAuthed(saved);
   }
   isAdmin=getLocalAdmin();
-
   renderAll();
   startStream();
 }
 
 function mergeState(data){
-  // Ensure all required keys exist
   return {
-    users: data.users||[],
+    users: data.users||{},
     votes: data.votes||{},
     special: data.special||{},
     top5: data.top5||{},
@@ -464,27 +531,40 @@ function mergeState(data){
   };
 }
 
-async function saveState(){
-  setSyncStatus("saving");
-  try{
-    await fetch(FB_URL,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(state)});
-    setSyncStatus("ok");
-  }catch(e){setSyncStatus("err");}
+// Helper: get users as sorted array [{name, pwHash}]
+function usersArray(){
+  return Object.entries(state.users).map(([name,u])=>({name,...u}));
 }
-function debounceSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveState,700);}
 
 let sseSource=null;
 function startStream(){
   if(sseSource) sseSource.close();
-  const url=FB_URL.replace(".json",".json?accept=text/event-stream");
-  sseSource=new EventSource(url);
+  sseSource=new EventSource(`${FB_BASE}.json?accept=text/event-stream`);
   sseSource.addEventListener("put",e=>{
     try{
       const msg=JSON.parse(e.data);
       if(msg.data){
         const modalOpen=document.querySelector(".modal-overlay.open");
-        if(!saveTimer&&!modalOpen){
+        if(Object.keys(pendingWrites).length===0&&!saveTimer&&!modalOpen){
           state=mergeState(msg.data);
+          renderAll();
+        }
+      }
+    }catch(_){}
+  });
+  sseSource.addEventListener("patch",e=>{
+    try{
+      const msg=JSON.parse(e.data);
+      if(msg.data){
+        // Merge patch into state without full replace
+        const d=msg.data;
+        if(d.votes) Object.assign(state.votes, d.votes);
+        if(d.special) Object.assign(state.special, d.special);
+        if(d.top5) Object.assign(state.top5, d.top5);
+        if(d.users) Object.assign(state.users, d.users);
+        if(d.countryOrder!==undefined) state.countryOrder=d.countryOrder;
+        const modalOpen=document.querySelector(".modal-overlay.open");
+        if(Object.keys(pendingWrites).length===0&&!saveTimer&&!modalOpen){
           renderAll();
         }
       }
@@ -643,20 +723,30 @@ async function confirmNewUser(){
   if(!name) return showErr("nu-err","Prénom requis.");
   if(!pw)   return showErr("nu-err","Mot de passe requis.");
   if(pw!==pw2) return showErr("nu-err","Les mots de passe ne correspondent pas.");
-  // Re-fetch to avoid race
-  try{const r=await fetch(FB_URL);const d=await r.json();if(d) state=mergeState(d);}catch(e){}
-  if(state.users.find(u=>u.name===name)) return showErr("nu-err","Ce prénom est déjà utilisé.");
+  // Re-fetch only users node to check for conflicts
+  try{const r=await fetch(`${FB_BASE}/users.json`);const d=await r.json();if(d) state.users=d;}catch(e){}
+  if(state.users[name]) return showErr("nu-err","Ce prénom est déjà utilisé.");
   const h=await hashPw(pw);
-  state.users.push({name,pwHash:h});
+  // Write atomically: each path is independent, no array to overwrite
+  setSyncStatus("saving");
+  try{
+    await fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        [`users/${name}`]: {pwHash:h},
+        [`votes/${name}`]: {},
+        [`special/${name}`]: {},
+        [`top5/${name}`]: [],
+      })
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");return showErr("nu-err","Erreur réseau, réessaie.");}
+  // Update local state after confirmed write
+  state.users[name]={pwHash:h};
   if(!state.votes[name]) state.votes[name]={};
   if(!state.special[name]) state.special[name]={};
-  setLocalId(name);
-  addLocalAuthed(name);
-  currentUser=name;
-  currentUserRank=name;
-  currentUserTop5=name;
+  setLocalId(name);addLocalAuthed(name);
+  currentUser=name;currentUserRank=name;currentUserTop5=name;
   closeModal("modal-new-user");
-  debounceSave();
   renderAll();
   showWelcomePopup(name);
 }
@@ -676,7 +766,7 @@ function openLoginModal(name){
 async function confirmLogin(){
   const pw=document.getElementById("login-pw").value;
   clearErr("login-err");
-  const user=state.users.find(u=>u.name===loginTarget);
+  const user=state.users[loginTarget];
   if(!user) return showErr("login-err","Utilisateur introuvable.");
   const h=await hashPw(pw);
   if(h!==user.pwHash) return showErr("login-err","Mot de passe incorrect.");
@@ -734,12 +824,11 @@ function openResetPw(name){
 async function confirmResetPw(){
   const pw=document.getElementById("reset-pw-val").value;
   if(!pw) return showErr("reset-pw-err","Mot de passe requis.");
-  const user=state.users.find(u=>u.name===resetPwTarget);
+  const user=state.users[resetPwTarget];
   if(!user) return showErr("reset-pw-err","Utilisateur introuvable.");
   user.pwHash=await hashPw(pw);
   closeModal("modal-reset-pw");
-  // Also clear local session for that user on other devices (they'll need to re-login)
-  debounceSave();
+  queueWrite(`users/${resetPwTarget}`, user);
   renderAdmin();
 }
 
@@ -750,11 +839,12 @@ function renderBubbles(containerId, activeUser, onSelect){
   const el=document.getElementById(containerId);
   if(!el) return;
   el.innerHTML="";
-  if(!state.users.length){
+  const users=usersArray();
+  if(!users.length){
     el.innerHTML='<span style="font-size:12px;color:var(--muted)">Aucun profil — clique sur + Nouveau</span>';
     return;
   }
-  state.users.forEach(u=>{
+  users.forEach(u=>{
     const active=u.name===activeUser;
     const btn=document.createElement("button");
     btn.className="profile-bubble"+(active?" active":"");
@@ -832,7 +922,7 @@ function setSpecial(catId, value){
   if(!state.special[currentUser]) state.special[currentUser]={};
   state.special[currentUser][catId]=value;
   renderSpecialCats();
-  debounceSave();
+  queueWrite(`special/${currentUser}`, state.special[currentUser]);
 }
 
 function renderVoteList(){
@@ -880,7 +970,7 @@ function setRating(name,val){
   const prev=state.votes[currentUser][name]||{};
   state.votes[currentUser][name]={...prev,rating:prev.rating===val?null:val};
   renderVoteList();
-  debounceSave();
+  queueWrite(`votes/${currentUser}/${name}`, state.votes[currentUser][name]);
 }
 
 // ══════════════════════════════════════════════
@@ -986,7 +1076,7 @@ function getUserTop5(user){
 function saveTop5Order(user, names){
   if(!state.top5) state.top5={};
   state.top5[user]=names;
-  debounceSave();
+  queueWrite(`top5/${user}`, names);
 }
 
 let top5DragSrc=null;
@@ -1116,7 +1206,7 @@ function handleRankInput(user, top5){
 function renderResults(){
   const el=document.getElementById("results-list");
   const meta=document.getElementById("results-meta");
-  const voters=state.users.filter(u=>Object.values(state.votes[u.name]||{}).some(v=>v.rating));
+  const voters=usersArray().filter(u=>Object.values(state.votes[u.name]||{}).some(v=>v.rating));
   if(!voters.length){meta.textContent="";el.innerHTML='<div style="color:var(--muted);text-align:center;padding:30px;font-size:13px;">Aucun vote pour l\'instant.</div>';return;}
   meta.textContent=`${voters.length} votant${voters.length>1?"s":""} : ${voters.map(u=>u.name).join(", ")}`;
   el.innerHTML="";
@@ -1239,11 +1329,11 @@ function renderOrder(){
 function reorderCountry(from,to){
   const names=getOrdered().map(c=>c.name);
   const moved=names.splice(from,1)[0];names.splice(to,0,moved);
-  state.countryOrder=names;renderOrder();debounceSave();
+  state.countryOrder=names;renderOrder();queueWrite("countryOrder",names);
 }
 function resetOrder(){
   if(!confirm("Remettre l'ordre officiel Eurovision ?")) return;
-  state.countryOrder=COUNTRIES.map(c=>c.name);renderOrder();debounceSave();
+  state.countryOrder=COUNTRIES.map(c=>c.name);renderOrder();queueWrite("countryOrder",state.countryOrder);
 }
 
 // ══════════════════════════════════════════════
@@ -1251,8 +1341,9 @@ function resetOrder(){
 // ══════════════════════════════════════════════
 function renderAdmin(){
   const el=document.getElementById("admin-users");el.innerHTML="";
-  if(!state.users.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Aucun utilisateur.</div>';return;}
-  state.users.forEach(u=>{
+  const users=usersArray();
+  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Aucun utilisateur.</div>';return;}
+  users.forEach(u=>{
     const voteCount=Object.values(state.votes[u.name]||{}).filter(v=>v.rating).length;
     const specialCount=Object.values(state.special[u.name]||{}).filter(v=>v).length;
     const div=document.createElement("div");div.className="admin-user-card";
@@ -1282,19 +1373,33 @@ function adminLogout(){
 function adminDeleteVotes(name){
   if(!confirm(`Supprimer tous les votes de ${name} ?`)) return;
   state.votes[name]={};state.special[name]={};state.top5[name]=[];
-  debounceSave();renderAdmin();
+  // Write null to delete sub-paths, then write empty objects
+  setSyncStatus("saving");
+  Promise.all([
+    fbPut(`votes/${name}`,{}),
+    fbPut(`special/${name}`,{}),
+    fbPut(`top5/${name}`,[]),
+  ]).then(()=>setSyncStatus("ok")).catch(()=>setSyncStatus("err"));
+  renderAdmin();
 }
 function adminDeleteUser(name){
   if(!confirm(`Supprimer l'utilisateur ${name} et tous ses votes ?`)) return;
-  state.users=state.users.filter(u=>u.name!==name);
+  delete state.users[name];
   delete state.votes[name];delete state.special[name];delete state.top5[name];
   if(currentUser===name){currentUser="";setLocalId("");}
-  debounceSave();renderAll();
+  setSyncStatus("saving");
+  Promise.all([
+    fbDelete(`users/${name}`),
+    fbDelete(`votes/${name}`),
+    fbDelete(`special/${name}`),
+    fbDelete(`top5/${name}`),
+  ]).then(()=>setSyncStatus("ok")).catch(()=>setSyncStatus("err"));
+  renderAll();
 }
 function adminResetAll(){
   if(!confirm("⚠️ Remettre à zéro TOUS les votes de TOUS les utilisateurs ?")) return;
-  state.users.forEach(u=>{state.votes[u.name]={};state.special[u.name]={};state.top5[u.name]=[];});
-  debounceSave();renderAll();
+  usersArray().forEach(u=>{state.votes[u.name]={};state.special[u.name]={};state.top5[u.name]=[];});
+  saveFullState();renderAll();
 }
 
 // ══════════════════════════════════════════════
