@@ -159,7 +159,7 @@ footer a{color:var(--border);text-decoration:none;cursor:pointer;}
 <header>
   <div>
     <div class="logo">Eurovision 2026<span>VIENNA · 16 MAI</span></div>
-    <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:2px;">✨ Soirée Nogueira en famille !</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);letter-spacing:.5px;margin-top:3px;">🎉 Nogueira's Family & Co. Crazy Eurovision Night!</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <button class="help-btn" onclick="openHelp()" title="Mode d'emploi">?</button>
@@ -1204,30 +1204,31 @@ function renderResults(){
   meta.textContent=`${voters.length} votant${voters.length>1?"s":""} : ${voters.map(u=>u.name).join(", ")}`;
   el.innerHTML="";
 
-  // Compute scores: avg rating (0-5) + Eurovision top5 points
+  // Compute scores: Eurovision top5 points primary, avg rating as tiebreaker
   const scoreMap={};
   getOrdered().forEach(c=>{
     const ratings=voters.map(u=>(state.votes[u.name][c.name]||{}).rating).filter(r=>r>0);
     const avg=ratings.length?ratings.reduce((a,b)=>a+b,0)/ratings.length:0;
-    // Eurovision points from top5
     let escPts=0;
     voters.forEach(u=>{
       const t5=getUserTop5(u.name);
       const rank=t5.findIndex(x=>x.name===c.name);
       if(rank>=0) escPts+=TOP5_PTS[rank];
     });
-    scoreMap[c.name]={c,avg,escPts,total:avg+escPts,voters:voters.filter(u=>(state.votes[u.name][c.name]||{}).rating>0)};
+    scoreMap[c.name]={c,avg,escPts,voters:voters.filter(u=>(state.votes[u.name][c.name]||{}).rating>0)};
   });
 
-  const scores=Object.values(scoreMap).filter(x=>x.avg>0||x.escPts>0).sort((a,b)=>b.total-a.total);
-  const maxTotal=scores[0]?.total||1;
+  // Sort: points desc, then avg desc as tiebreaker
+  const scores=Object.values(scoreMap).filter(x=>x.escPts>0||x.avg>0)
+    .sort((a,b)=>b.escPts!==a.escPts ? b.escPts-a.escPts : b.avg-a.avg);
+  const maxPts=scores[0]?.escPts||1;
 
   // Aggregated ranking
   const mainDiv=document.createElement("div");mainDiv.className="result-section";
   mainDiv.innerHTML=`<div class="result-section-title">🏆 Classement agrégé</div>
-    <p style="font-size:10px;color:var(--muted);margin-bottom:10px;">Score = note moyenne /5 + points Eurovision du top 5 (12·10·8·7·6)</p>`;
+    <p style="font-size:10px;color:var(--muted);margin-bottom:10px;">Points Eurovision du top 5 (12·10·8·7·6) · Moyenne des notes en départage</p>`;
   scores.forEach((item,idx)=>{
-    const pct=Math.round((item.total/maxTotal)*100);
+    const pct=maxPts>0?Math.round((item.escPts/maxPts)*100):0;
     const pills=item.voters.map(u=>{
       const r=(state.votes[u.name][item.c.name]||{}).rating;
       const t5=getUserTop5(u.name);
@@ -1240,7 +1241,7 @@ function renderResults(){
       <div class="result-bar-info">
         <div class="result-bar-label">
           <span style="font-weight:600;font-size:12px">${item.c.name}</span>
-          <span class="result-score">${item.avg.toFixed(1)}/5 · ${item.escPts}pts</span>
+          <span class="result-score">${item.escPts}pts${item.avg>0?" · "+item.avg.toFixed(1)+"★":""}</span>
         </div>
         <div class="result-bar-bg"><div class="result-bar-fill" style="width:${pct}%"></div></div>
         <div class="voter-pills">${pills}</div>
@@ -1363,36 +1364,66 @@ function adminLogout(){
   switchTab("vote");
 }
 
-function adminDeleteVotes(name){
+async function adminDeleteVotes(name){
   if(!confirm(`Supprimer tous les votes de ${name} ?`)) return;
-  state.votes[name]={};state.special[name]={};state.top5[name]=[];
-  // Write null to delete sub-paths, then write empty objects
+  state.votes[name]={};state.special[name]={};state.top5[name]=null;
   setSyncStatus("saving");
-  Promise.all([
-    fbPut(`votes/${name}`,{}),
-    fbPut(`special/${name}`,{}),
-    fbPut(`top5/${name}`,[]),
-  ]).then(()=>setSyncStatus("ok")).catch(()=>setSyncStatus("err"));
+  try{
+    // Writing null deletes the node in Firebase
+    await fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        [`votes/${name}`]: null,
+        [`special/${name}`]: null,
+        [`top5/${name}`]: null,
+      })
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
   renderAdmin();
 }
-function adminDeleteUser(name){
+
+async function adminDeleteUser(name){
   if(!confirm(`Supprimer l'utilisateur ${name} et tous ses votes ?`)) return;
   delete state.users[name];
   delete state.votes[name];delete state.special[name];delete state.top5[name];
   if(currentUser===name){currentUser="";setLocalId("");}
+  if(currentUserTop5===name) currentUserTop5="";
   setSyncStatus("saving");
-  Promise.all([
-    fbDelete(`users/${name}`),
-    fbDelete(`votes/${name}`),
-    fbDelete(`special/${name}`),
-    fbDelete(`top5/${name}`),
-  ]).then(()=>setSyncStatus("ok")).catch(()=>setSyncStatus("err"));
+  try{
+    await fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        [`users/${name}`]: null,
+        [`votes/${name}`]: null,
+        [`special/${name}`]: null,
+        [`top5/${name}`]: null,
+      })
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
   renderAll();
 }
-function adminResetAll(){
+
+async function adminResetAll(){
   if(!confirm("⚠️ Remettre à zéro TOUS les votes de TOUS les utilisateurs ?")) return;
-  usersArray().forEach(u=>{state.votes[u.name]={};state.special[u.name]={};state.top5[u.name]=[];});
-  saveFullState();renderAll();
+  const countryOrder=state.countryOrder; // preserve order
+  // Build patch: null out votes/special/top5 for each user, keep users and countryOrder
+  const patch={};
+  usersArray().forEach(u=>{
+    patch[`votes/${u.name}`]=null;
+    patch[`special/${u.name}`]=null;
+    patch[`top5/${u.name}`]=null;
+    state.votes[u.name]={};
+    state.special[u.name]={};
+    state.top5[u.name]=null;
+  });
+  setSyncStatus("saving");
+  try{
+    await fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(patch)
+    });
+    setSyncStatus("ok");
+  }catch(e){setSyncStatus("err");}
+  renderAll();
 }
 
 // ══════════════════════════════════════════════
