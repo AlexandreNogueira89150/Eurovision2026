@@ -409,9 +409,21 @@ async function hashPw(pw){
 // LOCAL STORAGE — per device
 // ══════════════════════════════════════════════
 const LS_ID="esc2026_id";
+const LS_AUTH="esc2026_auth"; // JSON array of authenticated names on this device
 const LS_ADMIN="esc2026_admin";
+
 function getLocalId(){return localStorage.getItem(LS_ID)||"";}
 function setLocalId(n){localStorage.setItem(LS_ID,n);}
+
+function getLocalAuthed(){
+  try{return JSON.parse(localStorage.getItem(LS_AUTH)||"[]");}catch(e){return[];}
+}
+function addLocalAuthed(name){
+  const list=getLocalAuthed();
+  if(!list.includes(name)){list.push(name);localStorage.setItem(LS_AUTH,JSON.stringify(list));}
+}
+function isLocalAuthed(name){return getLocalAuthed().includes(name);}
+
 function getLocalAdmin(){return localStorage.getItem(LS_ADMIN)==="1";}
 function setLocalAdmin(v){if(v) localStorage.setItem(LS_ADMIN,"1"); else localStorage.removeItem(LS_ADMIN);}
 
@@ -433,6 +445,7 @@ async function loadState(){
     currentUser=saved;
     currentUserRank=saved;
     currentUserTop5=saved;
+    addLocalAuthed(saved); // ensure current is in authed list
   }
   isAdmin=getLocalAdmin();
 
@@ -638,6 +651,7 @@ async function confirmNewUser(){
   if(!state.votes[name]) state.votes[name]={};
   if(!state.special[name]) state.special[name]={};
   setLocalId(name);
+  addLocalAuthed(name);
   currentUser=name;
   currentUserRank=name;
   currentUserTop5=name;
@@ -667,6 +681,7 @@ async function confirmLogin(){
   const h=await hashPw(pw);
   if(h!==user.pwHash) return showErr("login-err","Mot de passe incorrect.");
   setLocalId(loginTarget);
+  addLocalAuthed(loginTarget);
   if(loginForTop5){
     currentUserTop5=loginTarget;
     loginForTop5=false;
@@ -753,25 +768,19 @@ let loginForRank=false;
 
 function selectUserVote(name){
   if(name===currentUser) return;
-  const saved=getLocalId();
-  if(saved===name){
-    currentUser=name;
-    renderVote();
-    return;
+  if(isLocalAuthed(name)){
+    currentUser=name;setLocalId(name);renderVote();return;
   }
-  loginForRank=false;
+  loginForRank=false;loginForTop5=false;
   openLoginModal(name);
 }
 
 function selectUserRank(name){
   if(name===currentUserRank) return;
-  const saved=getLocalId();
-  if(saved===name){
-    currentUserRank=name;
-    renderRank();
-    return;
+  if(isLocalAuthed(name)){
+    currentUserRank=name;setLocalId(name);renderRank();return;
   }
-  loginForRank=true;
+  loginForRank=true;loginForTop5=false;
   openLoginModal(name);
 }
 
@@ -985,14 +994,10 @@ let currentUserTop5="";
 
 function selectUserTop5(name){
   if(name===currentUserTop5) return;
-  const saved=getLocalId();
-  if(saved===name){
-    currentUserTop5=name;
-    renderTop5();
-    return;
+  if(isLocalAuthed(name)){
+    currentUserTop5=name;setLocalId(name);renderTop5();return;
   }
-  loginForTop5=true;
-  loginForRank=false;
+  loginForTop5=true;loginForRank=false;
   openLoginModal(name);
 }
 let loginForTop5=false;
