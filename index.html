@@ -135,6 +135,14 @@ header{background:linear-gradient(135deg,#1a0a2e,#0f0f1f 50%,#1a0a0a);padding:16
 .admin-action-btn{padding:6px 12px;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:opacity .2s;}
 .admin-action-btn:hover{opacity:.8;}
 .btn-warn{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+/* HELP BTN */
+.help-btn{background:rgba(232,200,74,.15);border:1px solid rgba(232,200,74,.4);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:16px;cursor:pointer;transition:all .2s;flex-shrink:0;}
+.help-btn:hover{background:rgba(232,200,74,.3);}
+/* HELP MODAL */
+.help-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;}
+.help-step-icon{font-size:22px;flex-shrink:0;line-height:1.3;}
+.help-step-text{font-size:13px;line-height:1.5;color:var(--text);}
+.help-step-text b{color:var(--accent);}
 /* FOOTER */
 footer{text-align:center;padding:20px;font-size:11px;color:var(--border);}
 footer a{color:var(--border);text-decoration:none;cursor:pointer;}
@@ -151,8 +159,12 @@ footer a{color:var(--border);text-decoration:none;cursor:pointer;}
 <header>
   <div>
     <div class="logo">Eurovision 2026<span>VIENNA · 16 MAI</span></div>
+    <div style="font-size:11px;color:var(--muted);letter-spacing:1px;margin-top:2px;">✨ Soirée Nogueira en famille !</div>
   </div>
-  <div style="font-size:22px">🎤</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button class="help-btn" onclick="openHelp()" title="Mode d'emploi">?</button>
+    <div style="font-size:22px">🎤</div>
+  </div>
 </header>
 
 <div class="sync-bar">
@@ -171,7 +183,7 @@ footer a{color:var(--border);text-decoration:none;cursor:pointer;}
   <div class="profile-bar">
     <div class="profile-bar-label">
       <span>👤 Qui vote ?</span>
-      <button onclick="openNewUserModal()" style="background:none;border:none;color:var(--accent);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:600;">+ Nouveau</button>
+      <button onclick="openNewUserModal()" style="background:var(--accent);border:none;border-radius:20px;color:#000;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:700;padding:5px 14px;">+ Nouveau</button>
     </div>
     <div class="profile-bubbles" id="bubbles-vote"></div>
   </div>
@@ -287,7 +299,35 @@ footer a{color:var(--border);text-decoration:none;cursor:pointer;}
   <div class="welcome-modal">
     <div class="welcome-emoji" id="welcome-emoji"></div>
     <div class="welcome-msg" id="welcome-msg"></div>
-    <button class="btn btn-primary" onclick="closeModal('modal-welcome')" style="width:100%">🎉 C'est parti !</button>
+    <button class="btn btn-primary" onclick="closeWelcomeOpenHelp()" style="width:100%">🎉 C'est parti !</button>
+  </div>
+</div>
+
+<!-- ══ MODAL: HELP ══ -->
+<div class="modal-overlay" id="modal-help">
+  <div class="modal">
+    <h3>📖 Mode d'emploi</h3>
+    <div class="help-step">
+      <span class="help-step-icon">🗳️</span>
+      <div class="help-step-text"><b>Voter</b> — Pour chaque pays, appuie sur un émoji de 🤮 à 🔥 pour noter. Le ▶ permet d'écouter un extrait de 30 secondes.</div>
+    </div>
+    <div class="help-step">
+      <span class="help-step-icon">🏆</span>
+      <div class="help-step-text"><b>Top 5</b> — Ton top 5 se génère automatiquement depuis tes meilleures notes. Tape 1 à 5 dans les cases pour réordonner. Chaque position donne des points : 1er = 12pts, 2e = 10pts, 3e = 8pts, 4e = 7pts, 5e = 6pts.</div>
+    </div>
+    <div class="help-step">
+      <span class="help-step-icon">🌟</span>
+      <div class="help-step-text"><b>Catégories spéciales</b> — En haut de l'onglet Voter, choisis UN pays pour chaque catégorie : le plus drôle 😂, la meilleure tenue 👗, la chanson qui reste dans la tête 🎵, le meilleur décor 🎭.</div>
+    </div>
+    <div class="help-step">
+      <span class="help-step-icon">📊</span>
+      <div class="help-step-text"><b>Résultats</b> — Le classement famille combine les notes moyennes et les points top 5 de tout le monde. Les catégories spéciales sont aussi affichées.</div>
+    </div>
+    <div class="help-step">
+      <span class="help-step-icon">👤</span>
+      <div class="help-step-text"><b>Profils</b> — Sur un téléphone partagé, tap sur une bulle pour changer de votant. Ton profil est mémorisé sur cet appareil.</div>
+    </div>
+    <button class="btn btn-primary" onclick="closeModal('modal-help')" style="width:100%;margin-top:4px;">C'est compris ! 🎤</button>
   </div>
 </div>
 
@@ -555,10 +595,23 @@ function getWelcomeMessage(name){
 
 function showWelcomePopup(name){
   const match=getWelcomeMessage(name);
-  if(!match) return;
-  document.getElementById("welcome-emoji").textContent=match.emoji;
-  document.getElementById("welcome-msg").innerHTML=`Bienvenue <span class="welcome-name">${name}</span> !<br>${match.msg}`;
-  document.getElementById("modal-welcome").classList.add("open");
+  if(match){
+    document.getElementById("welcome-emoji").textContent=match.emoji;
+    document.getElementById("welcome-msg").innerHTML=`Bienvenue <span class="welcome-name">${name}</span> !<br>${match.msg}`;
+    document.getElementById("modal-welcome").classList.add("open");
+  } else {
+    // No welcome message — go straight to help
+    openHelp();
+  }
+}
+
+function closeWelcomeOpenHelp(){
+  closeModal("modal-welcome");
+  setTimeout(()=>openHelp(), 150);
+}
+
+function openHelp(){
+  document.getElementById("modal-help").classList.add("open");
 }
 function openNewUserModal(){
   clearErr("nu-err");
