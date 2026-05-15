@@ -466,8 +466,7 @@ let state={users:{},votes:{},special:{},top5:{},countryOrder:null};
 let currentUser="";
 let currentUserRank="";
 let isAdmin=false;
-let saveTimer=null;
-let loginTarget=""; // name being logged into
+let loginTarget="";
 
 // ══════════════════════════════════════════════
 // SIMPLE HASH (not cryptographic, sufficient for this use case)
@@ -585,7 +584,7 @@ function setSyncStatus(s){
 // ══════════════════════════════════════════════
 // TABS
 // ══════════════════════════════════════════════
-const ALL_TABS=["vote","rank","results","order","admin"];
+
 
 function switchTab(name){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
@@ -868,7 +867,7 @@ function selectUserVote(name){
 function selectUserRank(name){
   if(name===currentUserRank) return;
   if(isLocalAuthed(name)){
-    currentUserRank=name;setLocalId(name);renderRank();return;
+    currentUserRank=name;setLocalId(name);renderAll();return;
   }
   loginForRank=true;loginForTop5=false;
   openLoginModal(name);
@@ -1062,13 +1061,11 @@ function getAutoTop5(user){
 }
 
 function getUserTop5(user){
-  // Returns top5 respecting custom order if set, else auto
   const saved=state.top5&&state.top5[user];
   if(saved&&saved.length){
-    // Validate all names still exist and are rated
     const uv=state.votes[user]||{};
     const valid=saved.filter(n=>getOrdered().find(c=>c.name===n)&&uv[n]&&uv[n].rating>0);
-    if(valid.length===5) return valid.map(n=>getOrdered().find(c=>c.name===n));
+    if(valid.length>0) return valid.map(n=>getOrdered().find(c=>c.name===n));
   }
   return getAutoTop5(user);
 }
@@ -1166,21 +1163,21 @@ function renderTop5(){
 }
 
 function handleRankInput(user, top5){
+  const n=top5.length;
   const inputs=top5.map((c,i)=>document.getElementById("rank-input-"+i));
   const values=inputs.map(inp=>parseInt(inp.value));
 
-  // Validate: must be 1-5, no duplicates
+  // Validate: must be 1-n, no duplicates
   const seen=new Set();
   let allValid=true;
   inputs.forEach((inp,i)=>{
     const v=values[i];
     inp.classList.remove("valid","duplicate");
-    if(!v||v<1||v>5){inp.classList.add("duplicate");allValid=false;return;}
+    if(!v||v<1||v>n){inp.classList.add("duplicate");allValid=false;return;}
     if(seen.has(v)){inp.classList.add("duplicate");allValid=false;}
     else{inp.classList.add("valid");seen.add(v);}
   });
-
-  // Also mark first occurrence of duplicate as invalid
+  // Mark all duplicates
   if(!allValid){
     const counts={};
     values.forEach(v=>{ if(v) counts[v]=(counts[v]||0)+1; });
@@ -1189,14 +1186,10 @@ function handleRankInput(user, top5){
       if(v&&counts[v]>1){ inp.classList.remove("valid"); inp.classList.add("duplicate"); }
     });
   }
-
   if(!allValid) return;
-
-  // All valid — reorder top5 by assigned rank
   const pairs=top5.map((c,i)=>({c,rank:values[i]}));
   pairs.sort((a,b)=>a.rank-b.rank);
   saveTop5Order(user, pairs.map(p=>p.c.name));
-  // Re-render to update pts labels
   setTimeout(()=>renderTop5(), 300);
 }
 
