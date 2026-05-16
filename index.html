@@ -372,7 +372,7 @@ const COUNTRIES=[
   {pos:8,name:"Australie",artist:"Delta Goodrem",song:"Eclipse",flag:"🇦🇺"},
   {pos:9,name:"Serbie",artist:"LAVINA",song:"Kraj Mene",flag:"🇷🇸"},
   {pos:10,name:"Malte",artist:"AIDAN",song:"Bella",flag:"🇲🇹"},
-  {pos:11,name:"Rép. Tchèque",artist:"Daniel Zizka",song:"CROSSROADS",flag:"🇨🇿"},
+  {pos:11,name:"Rép Tchèque",artist:"Daniel Zizka",song:"CROSSROADS",flag:"🇨🇿"},
   {pos:12,name:"Bulgarie",artist:"DARA",song:"Bangaranga",flag:"🇧🇬"},
   {pos:13,name:"Croatie",artist:"LELEK",song:"Andromeda",flag:"🇭🇷"},
   {pos:14,name:"Grande-Bretagne",artist:"LOOK MUM NO COMPUTER",song:"Eins, Zwei, Drei",flag:"🇬🇧"},
@@ -580,13 +580,13 @@ function startStream(){
     try{
       const msg=JSON.parse(e.data);
       if(msg.data){
-        // Merge patch into state without full replace
         const d=msg.data;
         if(d.votes) Object.assign(state.votes, d.votes);
         if(d.special) Object.assign(state.special, d.special);
         if(d.top5) Object.assign(state.top5, d.top5);
         if(d.users) Object.assign(state.users, d.users);
         if(d.countryOrder!==undefined) state.countryOrder=d.countryOrder;
+        if(d.welcomeRules!==undefined) state.welcomeRules=d.welcomeRules;
         const modalOpen=document.querySelector(".modal-overlay.open");
         if(Object.keys(pendingWrites).length===0&&!saveTimer&&!modalOpen){
           renderAll();
@@ -595,6 +595,22 @@ function startStream(){
     }catch(_){}
   });
   sseSource.onerror=()=>setTimeout(startStream,3000);
+
+  // Dedicated polling for pendingWelcome — runs every 5s regardless of SSE state
+  setInterval(async()=>{
+    if(!currentUser) return;
+    try{
+      const res=await fetch(`${FB_BASE}/users/${encodeURIComponent(currentUser)}/pendingWelcome.json`);
+      const val=await res.json();
+      if(val===true){
+        // Clear immediately then show popup
+        await fetch(`${FB_BASE}/users/${encodeURIComponent(currentUser)}/pendingWelcome.json`,
+          {method:"PUT",headers:{"Content-Type":"application/json"},body:"null"});
+        if(state.users[currentUser]) state.users[currentUser].pendingWelcome=false;
+        showWelcomePopup(currentUser);
+      }
+    }catch(_){}
+  }, 5000);
 }
 
 // ══════════════════════════════════════════════
@@ -1154,18 +1170,35 @@ function renderTop5(){
   const top5Names=new Set(top5.map(c=>c.name));
   const others=rated.filter(c=>!top5Names.has(c.name));
   if(others.length){
-    elRem.innerHTML=`<p class="top5-remaining-hdr">Autres pays notés</p>`;
+    elRem.innerHTML=`<p class="top5-remaining-hdr">Autres pays notés — clique sur ↕ pour échanger avec une place de ton top 5</p>`;
     others.forEach(c=>{
       const vote=uv[c.name]||{};
+      const cName=c.name.replace(/'/g,"\\'");
       const d=document.createElement("div");d.className="top5-other";
-      d.innerHTML=`<span style="font-size:20px">${c.flag}</span>
+      d.style.opacity="1";
+      d.innerHTML=`
+        <span style="font-size:20px">${c.flag}</span>
         <div style="flex:1;min-width:0"><div style="font-weight:500;font-size:13px">${c.name}</div></div>
-        <span style="font-size:16px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>`;
+        <span style="font-size:15px;margin-right:6px">${vote.rating?EMOJIS[vote.rating-1].e:""}</span>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${top5.map((t,i)=>`<button onclick="swapIntoTop5('${cName}',${i},'${user}')"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+            color:var(--accent);font-size:10px;font-family:'DM Sans',sans-serif;font-weight:600;
+            padding:3px 7px;cursor:pointer;white-space:nowrap;">
+            ↕ #${i+1}</button>`).join("")}
+        </div>`;
       elRem.appendChild(d);
     });
   } else {
     elRem.innerHTML="";
   }
+}
+
+function swapIntoTop5(incomingName, replaceIdx, user){
+  const current=getUserTop5(user).map(c=>c.name);
+  current[replaceIdx]=incomingName;
+  saveTop5Order(user, current);
+  renderTop5();
 }
 
 function handleRankInput(user, top5){
@@ -1368,8 +1401,12 @@ function renderAdmin(){
   renderAdminWelcomeRules();
 }
 
-function adminReplayWelcome(name){
-  showWelcomePopup(name);
+async function adminReplayWelcome(name){
+  // Set a flag on the user's profile — checked on every renderAll
+  state.users[name].pendingWelcome=true;
+  await fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({[`users/${name}/pendingWelcome`]: true})
+  });
 }
 
 // ── WELCOME RULES EDITOR ──
@@ -1523,6 +1560,15 @@ async function adminResetAll(){
 // ══════════════════════════════════════════════
 function renderAll(){
   buildTabs();
+  // Check if current user has a pending welcome message
+  if(currentUser && state.users[currentUser]?.pendingWelcome){
+    // Clear the flag immediately to avoid showing twice
+    state.users[currentUser].pendingWelcome=false;
+    fetch(`${FB_BASE}.json`,{method:"PATCH",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({[`users/${currentUser}/pendingWelcome`]: null})
+    });
+    setTimeout(()=>showWelcomePopup(currentUser), 300);
+  }
   const active=document.querySelector(".tab.active");
   const name=active?active.dataset.tab:"vote";
   if(name==="vote")    renderVote();
