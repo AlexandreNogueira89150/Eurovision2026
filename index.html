@@ -229,9 +229,33 @@ footer a{color:var(--border);text-decoration:none;cursor:pointer;}
   </div>
   <div class="divider"></div>
   <div class="admin-section">
+    <div class="admin-section-title">💬 Messages de bienvenue</div>
+    <div id="admin-welcome-rules"></div>
+    <button class="btn btn-ghost" onclick="adminAddRule()" style="width:100%;margin-top:8px;">+ Ajouter une règle</button>
+  </div>
+  <div class="divider"></div>
+  <div class="admin-section">
     <div class="admin-section-title">⚠️ Zone dangereuse</div>
     <button class="btn btn-danger" onclick="adminResetAll()" style="width:100%;margin-bottom:10px;">🗑️ Remettre à zéro (tous les votes)</button>
     <button class="btn btn-ghost" onclick="adminLogout()" style="width:100%;">🔒 Quitter le mode admin</button>
+  </div>
+</div>
+
+<!-- ══ MODAL: WELCOME RULE EDITOR ══ -->
+<div class="modal-overlay" id="modal-rule-editor">
+  <div class="modal">
+    <h3 id="rule-editor-title">Règle de message</h3>
+    <p class="sub">Prénoms déclencheurs (séparés par des virgules, insensible à la casse et aux accents)</p>
+    <input type="text" id="rule-names" placeholder="ex: Laura, Bébé chat, Lolo" />
+    <p class="sub" style="margin-top:4px;">Emojis</p>
+    <input type="text" id="rule-emoji" placeholder="ex: 🐱💕😻" />
+    <p class="sub" style="margin-top:4px;">Message</p>
+    <input type="text" id="rule-msg" placeholder="ex: Je t'aime mon amour !" />
+    <div class="modal-err" id="rule-err"></div>
+    <div class="modal-btns" style="margin-top:10px;">
+      <button class="btn btn-ghost" onclick="closeModal('modal-rule-editor')">Annuler</button>
+      <button class="btn btn-primary" onclick="confirmSaveRule()">Sauvegarder</button>
+    </div>
   </div>
 </div>
 
@@ -527,6 +551,7 @@ function mergeState(data){
     special: data.special||{},
     top5: data.top5||{},
     countryOrder: data.countryOrder||null,
+    welcomeRules: data.welcomeRules||null,
   };
 }
 
@@ -642,42 +667,23 @@ function normalize(s){
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
 }
 
-const WELCOME_RULES=[
-  {
-    names:["mamou","nath","maman"],
-    emoji:"💖🥰💖",
-    msg:"Je t'aime ma maman chérie !"
-  },
-  {
-    names:["papa","papou","manu"],
-    emoji:"💙😍💙",
-    msg:"Je t'aime mon Papounet !"
-  },
-  {
-    names:["anne","tatane","tata anne"],
-    emoji:"🥰💕🥰",
-    msg:"Je t'aime ma grande sœur d'amour !"
-  },
-  {
-    names:["marie","tata marie cherie","tata marie chérie"],
-    emoji:"💜🌸💜",
-    msg:"Je t'aime ma sœur Marie chérie !"
-  },
-  {
-    names:["noe","theo","gabriel","gaga"],
-    emoji:"😍🎉😍",
-    msg:"Je t'aime mon neveu adoré !"
-  },
-  {
-    names:["laura","bebe chat","bébé chat"],
-    emoji:"🐱💕😻",
-    msg:"Je t'aime mon amour de bébé chat !"
-  },
+const DEFAULT_WELCOME_RULES=[
+  {names:["mamou","nath","maman"],emoji:"💖🥰💖",msg:"Je t'aime ma maman chérie !"},
+  {names:["papa","papou","manu"],emoji:"💙😍💙",msg:"Je t'aime mon Papounet !"},
+  {names:["anne","tatane","tata anne"],emoji:"🥰💕🥰",msg:"Je t'aime ma grande sœur d'amour !"},
+  {names:["marie","tata marie cherie","tata marie chérie"],emoji:"💜🌸💜",msg:"Je t'aime ma sœur Marie chérie !"},
+  {names:["noe","theo","gabriel","gaga"],emoji:"😍🎉😍",msg:"Je t'aime mon neveu adoré !"},
+  {names:["laura","bebe chat","bébé chat"],emoji:"🐱💕😻",msg:"Je t'aime mon amour de bébé chat !"},
 ];
+
+// Use state.welcomeRules if set (admin-editable), else defaults
+function getActiveRules(){
+  return (state.welcomeRules&&state.welcomeRules.length) ? state.welcomeRules : DEFAULT_WELCOME_RULES;
+}
 
 function getWelcomeMessage(name){
   const n=normalize(name);
-  for(const rule of WELCOME_RULES){
+  for(const rule of getActiveRules()){
     if(rule.names.some(r=>normalize(r)===n)){
       return{emoji:rule.emoji, msg:rule.msg};
     }
@@ -1336,25 +1342,111 @@ function resetOrder(){
 function renderAdmin(){
   const el=document.getElementById("admin-users");el.innerHTML="";
   const users=usersArray();
-  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Aucun utilisateur.</div>';return;}
-  users.forEach(u=>{
-    const voteCount=Object.values(state.votes[u.name]||{}).filter(v=>v.rating).length;
-    const specialCount=Object.values(state.special[u.name]||{}).filter(v=>v).length;
-    const div=document.createElement("div");div.className="admin-user-card";
-    div.innerHTML=`<div class="admin-user-header">
-      <span style="font-size:20px">👤</span>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:14px">${u.name}</div>
-        <div style="font-size:11px;color:var(--muted)">${voteCount} votes · ${specialCount}/4 catégories spéciales</div>
+  if(!users.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Aucun utilisateur.</div>';}
+  else{
+    users.forEach(u=>{
+      const voteCount=Object.values(state.votes[u.name]||{}).filter(v=>v.rating).length;
+      const specialCount=Object.values(state.special[u.name]||{}).filter(v=>v).length;
+      const hasMsg=!!getWelcomeMessage(u.name);
+      const div=document.createElement("div");div.className="admin-user-card";
+      div.innerHTML=`<div class="admin-user-header">
+        <span style="font-size:20px">👤</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${u.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${voteCount} votes · ${specialCount}/4 catégories spéciales</div>
+        </div>
       </div>
-    </div>
-    <div class="admin-user-actions">
-      <button class="admin-action-btn btn-warn" onclick="openResetPw('${u.name}')">🔑 Réinitialiser MDP</button>
-      <button class="admin-action-btn btn-danger" onclick="adminDeleteVotes('${u.name}')">🗑️ Supprimer votes</button>
-      <button class="admin-action-btn btn-danger" onclick="adminDeleteUser('${u.name}')">❌ Supprimer utilisateur</button>
-    </div>`;
+      <div class="admin-user-actions">
+        <button class="admin-action-btn btn-warn" onclick="openResetPw('${u.name}')">🔑 MDP</button>
+        ${hasMsg?`<button class="admin-action-btn btn-warn" onclick="adminReplayWelcome('${u.name}')">🎉 Rejouer message</button>`:''}
+        <button class="admin-action-btn btn-danger" onclick="adminDeleteVotes('${u.name}')">🗑️ Votes</button>
+        <button class="admin-action-btn btn-danger" onclick="adminDeleteUser('${u.name}')">❌ Supprimer</button>
+      </div>`;
+      el.appendChild(div);
+    });
+  }
+  renderAdminWelcomeRules();
+}
+
+function adminReplayWelcome(name){
+  showWelcomePopup(name);
+}
+
+// ── WELCOME RULES EDITOR ──
+let editingRuleIdx=null;
+
+function renderAdminWelcomeRules(){
+  const el=document.getElementById("admin-welcome-rules");
+  if(!el) return;
+  const rules=getActiveRules();
+  el.innerHTML="";
+  rules.forEach((rule,idx)=>{
+    const div=document.createElement("div");
+    div.className="admin-user-card";
+    div.style.marginBottom="8px";
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:18px">${rule.emoji}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rule.names.join(", ")}</div>
+          <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${rule.msg}</div>
+        </div>
+      </div>
+      <div class="admin-user-actions">
+        <button class="admin-action-btn btn-warn" onclick="adminEditRule(${idx})">✏️ Modifier</button>
+        <button class="admin-action-btn btn-danger" onclick="adminDeleteRule(${idx})">❌ Supprimer</button>
+      </div>`;
     el.appendChild(div);
   });
+}
+
+function adminAddRule(){
+  editingRuleIdx=null;
+  document.getElementById("rule-editor-title").textContent="Nouvelle règle";
+  document.getElementById("rule-names").value="";
+  document.getElementById("rule-emoji").value="";
+  document.getElementById("rule-msg").value="";
+  clearErr("rule-err");
+  document.getElementById("modal-rule-editor").classList.add("open");
+}
+
+function adminEditRule(idx){
+  editingRuleIdx=idx;
+  const rules=getActiveRules();
+  const rule=rules[idx];
+  document.getElementById("rule-editor-title").textContent="Modifier la règle";
+  document.getElementById("rule-names").value=rule.names.join(", ");
+  document.getElementById("rule-emoji").value=rule.emoji;
+  document.getElementById("rule-msg").value=rule.msg;
+  clearErr("rule-err");
+  document.getElementById("modal-rule-editor").classList.add("open");
+}
+
+function confirmSaveRule(){
+  const namesRaw=document.getElementById("rule-names").value.trim();
+  const emoji=document.getElementById("rule-emoji").value.trim();
+  const msg=document.getElementById("rule-msg").value.trim();
+  clearErr("rule-err");
+  if(!namesRaw) return showErr("rule-err","Au moins un prénom requis.");
+  if(!msg) return showErr("rule-err","Message requis.");
+  const names=namesRaw.split(",").map(s=>s.trim()).filter(Boolean);
+  const rules=[...getActiveRules()];
+  const newRule={names, emoji:emoji||"🎉", msg};
+  if(editingRuleIdx!==null) rules[editingRuleIdx]=newRule;
+  else rules.push(newRule);
+  state.welcomeRules=rules;
+  queueWrite("welcomeRules", rules);
+  closeModal("modal-rule-editor");
+  renderAdminWelcomeRules();
+}
+
+function adminDeleteRule(idx){
+  if(!confirm("Supprimer cette règle ?")) return;
+  const rules=[...getActiveRules()];
+  rules.splice(idx,1);
+  state.welcomeRules=rules.length?rules:[];
+  queueWrite("welcomeRules", state.welcomeRules.length?state.welcomeRules:null);
+  renderAdminWelcomeRules();
 }
 
 function adminLogout(){
